@@ -351,14 +351,18 @@
   }
   /* everyone in the group, with a way to add or take off a name */
   function peopleSheet() {
-    const me = A.me();
+    const me = A.me(), org = A.lock ? A.lock.organizer() : '', boss = !org || me === org;
     A.ui.sheet({
       title: 'People',
       html: '<div class="gp-people">' + A.names.map(n => '<div class="gp-person">' + A.ui.avatar(n, 30) + '<b>' + esc(n) + '</b>' +
-        (n === me ? '<small>You</small>' : '<button class="icon-btn" data-rm="' + esc(n) + '" aria-label="Remove ' + esc(n) + '">' + A.icon('x', 16) + '</button>') + '</div>').join('') + '</div>' +
+        (n === org ? '<small>' + (n === me ? 'You run this' : 'Runs this') + '</small>' : n === me ? '<small>You</small>' : '') +
+        (boss && n !== me ? (A.lock && A.lock.has(n) ? '<button class="icon-btn" data-pin="' + esc(n) + '" aria-label="Reset the PIN for ' + esc(n) + '">' + A.icon('lock', 16) + '</button>' : '') +
+          '<button class="icon-btn" data-rm="' + esc(n) + '" aria-label="Remove ' + esc(n) + '">' + A.icon('x', 16) + '</button>' : '') + '</div>').join('') + '</div>' +
+        (org && !boss ? '<p class="muted" style="font-size:13px;margin-top:10px">' + esc(org) + ' runs this group and can reset a PIN or take someone off.</p>' : '') +
         (A.names.length < A.maxPeople ? '<button class="btn block" id="gpAdd" style="margin-top:12px">' + A.icon('plus', 16) + 'Add a person</button>' : ''),
       onMount(el, close) {
         const add = $('#gpAdd', el); if (add) add.onclick = () => addPersonSheet(() => { close(); peopleSheet(); });
+        $$('[data-pin]', el).forEach(b => { b.onclick = () => A.ui.confirm('Reset the PIN for ' + b.dataset.pin + '? They make a new one the next time they open the app.', 'Reset PIN', true).then(yes => { if (yes) { A.lock.reset(b.dataset.pin); close(); peopleSheet(); A.ui.toast('PIN reset.'); } }); });
         $$('[data-rm]', el).forEach(b => { b.onclick = () => A.ui.confirm('Take ' + b.dataset.rm + ' off this group? Their wishes are kept and come back if you add the same name again.', 'Remove', true).then(yes => { if (yes) { A.removePerson(b.dataset.rm); close(); peopleSheet(); A.softRefresh(); } }); });
       },
       onClose() { A.softRefresh(); }

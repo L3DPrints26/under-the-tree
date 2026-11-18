@@ -92,10 +92,13 @@ window.App = (function () {
 
   /* ---------- who is using this (remembered per space, on this device only) ---------- */
   let ME = App.store.get('me', null);
-  if (App.names.indexOf(App.qs.get('me')) >= 0) ME = App.qs.get('me');
+  /* ?me=Name is a test hook and only works on this computer, never on the real site */
+  const DEV = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+  if (DEV && App.names.indexOf(App.qs.get('me')) >= 0) ME = App.qs.get('me');
   if (App.names.indexOf(ME) < 0) ME = null;
   App.me = () => ME;
   App.setMe = n => { ME = n; App.store.set('me', n); App.emit('me', n); };
+  App.clearMe = () => { ME = null; App.store.del('me'); App.emit('me', null); if (App.renderShell) App.renderShell(); };
 
   /* ---------- photos (IndexedDB, with an in-memory cache) ---------- */
   const cache = new Map(); let db = null;
@@ -224,6 +227,7 @@ window.App = (function () {
     .who-btn>span:last-child{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .who-plus{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;border:1.5px dashed var(--line2);color:var(--muted)}
     .who-row{margin-top:12px}
+    .who-switch{margin-top:8px}
     .who-row .btn{padding:0 10px}
     .bg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
     .bg-opt{position:relative;aspect-ratio:16/10;border-radius:12px;background:#0a1429 center/cover;border:2px solid transparent;overflow:hidden}
@@ -306,9 +310,13 @@ window.App = (function () {
     ui.sheet({
       title: 'Settings', cls: 'set',
       html: '<label class="switch"><span class="s-text"><b>School mode</b><small>Shows Dad and Mom instead of Daddy and Mommy. Only on this device.</small></span><input type="checkbox" id="setSchool"' + (school ? ' checked' : '') + '></label>' +
+        (App.lock && App.lock.on() && ME ? '<div class="row gap" style="margin:4px 0 6px"><button class="btn sm grow" id="setPin">' + App.icon('lock', 16) + 'Change my PIN</button><button class="btn sm grow" id="setFace" hidden></button></div>' : '') +
         (bgs.length ? '<span class="label" style="margin-top:10px">Background</span><div class="bg-grid">' + bgs.map(b => '<button class="bg-opt' + (b.id === cur ? ' on' : '') + '" data-bg="' + b.id + '" style="background-image:url(' + b.thumb + ')"><span>' + App.esc(b.name) + '</span></button>').join('') + '</div>' : ''),
       onMount(el) {
         $('#setSchool', el).onchange = e => App.school.set(e.target.checked);
+        const pb = $('#setPin', el), fb = $('#setFace', el);
+        if (pb) pb.onclick = () => App.lock.changePin();
+        if (fb) { const lab = () => { fb.innerHTML = App.icon('eye', 16) + (App.lock.faceOn(ME) ? 'Face ID is on' : 'Use Face ID here'); }; App.lock.faceReady().then(ok => { if (!ok) return; fb.hidden = false; lab(); fb.onclick = () => App.lock.faceToggle().then(on => { lab(); ui.toast(on ? 'Done. This phone can sign you in.' : 'Face ID is off on this phone.'); }, () => ui.toast('That did not turn on.')); }); }
         $$('.bg-opt', el).forEach(b => b.onclick = () => { App.scene.setBackground(b.dataset.bg); $$('.bg-opt', el).forEach(x => x.classList.toggle('on', x === b)); });
       }
     });
@@ -318,9 +326,10 @@ window.App = (function () {
   let whoApi = null, whoFirst = false, whoLoading = false;
   const reWho = () => { if (!whoApi) return; const f = whoFirst; whoApi.close(); ui.who(f); };
   App.on('cloud', () => { if (whoApi && whoLoading && App.cloud.synced()) reWho(); });
+  /* first: true = this phone has no name yet (cannot be closed), 'switch' = change person, false = your profile */
   ui.who = first => {
-    const mine = !first && ME;
-    whoFirst = !!first;
+    const picker = !!first, mine = !picker && ME, locks = !!(App.lock && App.lock.on());
+    whoFirst = first;
     /* a phone that just joined has nothing saved yet: wait for the group instead of showing an empty list */
     whoLoading = !App.names.length && !!App.space() && !!App.cloud && !App.cloud.synced();
     if (whoLoading) { whoApi = ui.sheet({ title: 'Getting the group…', locked: true, cls: 'who', html: '<p class="muted">One moment. If this takes long, check the Wi-Fi.</p>', onClose() { whoApi = null; } }); return; }
@@ -328,20 +337,25 @@ window.App = (function () {
       '<button class="btn sm primary" id="picPick">' + App.icon('camera', 16) + (App.pics.has(ME) ? 'Change picture' : 'Add a picture') + '</button>' +
       (App.pics.has(ME) ? '<button class="btn sm ghost" id="picClear">Remove</button>' : '') + '</div></div>';
     whoApi = ui.sheet({
-      title: first ? "Who's using this?" : 'Your profile', locked: !!first, cls: 'who', onClose() { whoApi = null; },
-      html: (mine ? '<div class="me-pic" id="picRow">' + picRow() + '</div><input type="file" accept="image/*" id="picFile" hidden><p class="muted who-sub">Picked the wrong person? Tap your name.</p>'
-        : '<p class="muted">' + (App.names.length ? 'Pick your name. You can change your own list and see everyone else\'s.' : 'Nobody is in this group yet. Add your name to start.') + '</p>') +
-        '<div class="who-grid' + (App.names.length > 5 ? ' many' : '') + '">' +
-        App.names.map(n => '<button class="who-btn' + (n === ME ? ' on' : '') + '" data-n="' + App.esc(n) + '">' + ui.avatar(n, 64) + '<span>' + App.esc(n) + '</span></button>').join('') +
-        (App.cloud && App.names.length < App.maxPeople ? '<button class="who-btn who-add" id="whoAdd"><span class="who-plus">' + App.icon('plus', 26) + '</span><span>' + (App.names.length ? 'Add a name' : 'Add my name') + '</span></button>' : '') + '</div>' +
-        (first ? '' : '<div class="row gap who-row">' + (App.cloud ? '<button class="btn grow" id="whoGroups">' + App.icon('users', 18) + (App.space() ? 'Group' : 'Go online') + '</button>' : '') +
-          '<button class="btn grow" id="whoSet">' + App.icon('sliders', 18) + 'Settings</button></div>'),
+      title: picker ? (first === 'switch' ? 'Switch person' : "Who's using this?") : 'Your profile', locked: picker && first !== 'switch', cls: 'who', onClose() { whoApi = null; },
+      html: mine
+        ? '<div class="me-pic" id="picRow">' + picRow() + '</div><input type="file" accept="image/*" id="picFile" hidden>' +
+          '<div class="row gap who-row">' + (App.cloud ? '<button class="btn grow" id="whoGroups">' + App.icon('users', 18) + (App.space() ? 'Group' : 'Go online') + '</button>' : '') +
+          '<button class="btn grow" id="whoSet">' + App.icon('sliders', 18) + 'Settings</button></div>' +
+          '<button class="btn ghost block who-switch" id="whoSwitch">Switch person</button>'
+        : '<p class="muted">' + (!App.names.length ? 'Nobody is in this group yet. Add your name to start.' : locks ? 'Pick your name. A name with a lock already belongs to someone and needs their PIN.' : 'Pick your name. You can change your own list and see everyone else\'s.') + '</p>' +
+          '<div class="who-grid' + (App.names.length > 5 ? ' many' : '') + '">' +
+          App.names.map(n => '<button class="who-btn' + (n === ME ? ' on' : '') + '" data-n="' + App.esc(n) + '">' + (locks && App.lock.has(n) ? '<i class="who-lock">' + App.icon('lock', 14) + '</i>' : '') + ui.avatar(n, 64) + '<span>' + App.esc(n) + '</span></button>').join('') +
+          (App.cloud && App.names.length < App.maxPeople ? '<button class="who-btn who-add" id="whoAdd"><span class="who-plus">' + App.icon('plus', 26) + '</span><span>' + (App.names.length ? 'Add a name' : 'Add my name') + '</span></button>' : '') + '</div>',
       onMount(el, close) {
         const pickMe = n => { const was = ME; App.setMe(n); close(); App.renderShell(); App.route(); if (was !== ME) ui.toast('Hi, ' + ME + '.'); };
-        $$('.who-btn[data-n]', el).forEach(b => b.onclick = () => pickMe(b.dataset.n));
-        const add = $('#whoAdd', el); if (add) add.onclick = () => App.cloud.addPersonSheet(n => { if (App.data) App.data.init(); if (!ME) pickMe(n); else { close(); ui.who(false); } });
+        /* a name is only yours after its PIN (or after you make one for it) */
+        const tryName = n => (App.lock ? App.lock.choose(n) : Promise.resolve(true)).then(ok => { if (ok) pickMe(n); });
+        $$('.who-btn[data-n]', el).forEach(b => b.onclick = () => { if (b.dataset.n === ME) { close(); return; } tryName(b.dataset.n); });
+        const add = $('#whoAdd', el); if (add) add.onclick = () => App.cloud.addPersonSheet(n => { if (App.data) App.data.init(); tryName(n); });
         const grp = $('#whoGroups', el); if (grp) grp.onclick = () => { close(); App.cloud.groupSheet(); };
         const set = $('#whoSet', el); if (set) set.onclick = () => { close(); ui.settings(); };
+        const sw = $('#whoSwitch', el); if (sw) sw.onclick = () => { close(); ui.who('switch'); };
         if (!mine) return;
         const row = $('#picRow', el), file = $('#picFile', el);
         const draw = () => { row.innerHTML = picRow(); $('#picPick', row).onclick = () => file.click(); const c = $('#picClear', row); if (c) c.onclick = () => { App.pics.clear(ME); draw(); }; };
@@ -396,7 +410,7 @@ window.App = (function () {
     if (keys.indexOf('people') >= 0) {
       App.loadPeople(); if (ME && App.names.indexOf(ME) < 0) ME = null;
       /* test hook: ?me=Name also works on a phone that has only just joined */
-      if (!ME && App.names.indexOf(App.qs.get('me')) >= 0) { App.setMe(App.qs.get('me')); if (whoApi) whoApi.close(); App.renderShell(); App.route(); App.softRefresh(); return; }
+      if (DEV && !ME && App.names.indexOf(App.qs.get('me')) >= 0) { App.setMe(App.qs.get('me')); if (whoApi) whoApi.close(); App.renderShell(); App.route(); App.softRefresh(); return; }
       App.renderShell(); if (whoApi) reWho();
     }
     if (!ME) { if (!ui.sheetOpen()) ui.who(true); return; }
