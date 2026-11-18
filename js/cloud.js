@@ -200,15 +200,19 @@
 
   /* ---------- create, join, leave ---------- */
   /* copy what is saved on this device (from before groups) into the new group, and queue all of it to go up */
-  function carryOver(id) {
+  function carryOver(id, joining) {
     const pre = 'g:' + id + ':', d = {}, pics = new Set();
+    /* joining a group that already has lists: only bring lists that have something in them, so an empty
+       copy on this device can never wipe what someone already added from their own phone */
+    const keep = (k, s, f) => !(joining && k === 'lists' && !((parse(f[s]) || {}).items || []).length);
     const walk = v => { if (typeof v === 'string') { if (v.length < 40 && A.photos.get(v)) pics.add(v); } else if (v && typeof v === 'object') Object.keys(v).forEach(p => walk(v[p])); };
     Object.keys(localStorage).forEach(full => {
       if (full.indexOf('utt:') !== 0) return;
       const k = full.slice(4); if (k.indexOf('g:') === 0 || k === 'groups' || k === 'group' || k === 'music' || k === 'seeded') return;
       const v = raw.get(k); raw.set(pre + k, v);
       if (NOSYNC[k]) return;
-      const f = flat(k, v); if (Object.keys(f).length) { d[k] = {}; Object.keys(f).forEach(s => { d[k][s] = 1; }); }
+      const f = flat(k, v), subs = Object.keys(f).filter(s => keep(k, s, f));
+      if (subs.length) { d[k] = {}; subs.forEach(s => { d[k][s] = 1; }); }
       walk(v);
     });
     raw.set(pre + 'dirty', d); raw.set(pre + 'pup', Array.from(pics));
@@ -224,14 +228,16 @@
     raw.set('group', id);
     return id;
   }
-  async function join(code) {
+  async function join(code, bring) {
     const id = cleanCode(code); if (id.length < 6) throw new Error('nocode');
     await within(start(), 15000);
     const g = db.ref('groups/' + id);
     try { await within(g.child('members/' + user.uid).set(Date.now()), 12000); }       /* refused unless the group exists */
     catch (e) { throw new Error(e && e.message === 'offline' ? 'offline' : 'nocode'); }
     const meta = (await within(g.child('meta').once('value'), 12000)).val() || {};
-    register(id, meta.name || 'Group'); raw.set('group', id);
+    register(id, meta.name || 'Group');
+    if (bring) carryOver(id, true);
+    raw.set('group', id);
     return id;
   }
   async function leave(id) {
@@ -275,9 +281,11 @@
     });
   }
   function joinSheet(code) {
+    const bring = !A.space() && hasLocalLists();
     A.ui.sheet({
       title: 'Join with a code',
       html: '<label class="field"><span>The code someone in the group sent you</span><input class="input code-in" id="jCode" maxlength="14" placeholder="ABCDE-12345" autocomplete="off" autocapitalize="characters" spellcheck="false" value="' + esc(code ? pretty(cleanCode(code)) : '') + '"></label>' +
+        (bring ? '<label class="switch"><span class="s-text"><b>Bring over the lists on this device</b><small>They replace the group\'s copy for the same names. Leave this off to keep the group as it is.</small></span><input type="checkbox" id="jBring"></label>' : '') +
         '<p class="gp-msg" id="jMsg"></p><button class="btn primary block" id="jGo">Join</button>',
       onMount(el) {
         const btn = $('#jGo', el), inp = $('#jCode', el);
@@ -285,7 +293,7 @@
           const id = cleanCode(inp.value);
           if (groups().some(g => g.id === id)) return switchTo(id);
           btn.disabled = true; btn.textContent = 'Joining…'; $('#jMsg', el).textContent = '';
-          join(id).then(go, e => { btn.disabled = false; btn.textContent = 'Join'; $('#jMsg', el).textContent = why(e); });
+          join(id, bring && $('#jBring', el).checked).then(go, e => { btn.disabled = false; btn.textContent = 'Join'; $('#jMsg', el).textContent = why(e); });
         };
         btn.onclick = run; inp.addEventListener('keydown', e => { if (e.key === 'Enter') run(); });
       }
