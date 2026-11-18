@@ -223,7 +223,13 @@ window.App = (function () {
     .who-btn.on{border-color:var(--gold)}
     .who-btn>span:last-child{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .who-plus{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;border:1.5px dashed var(--line2);color:var(--muted)}
-    .who-groups{margin-top:12px}
+    .who-row{margin-top:12px}
+    .who-row .btn{padding:0 10px}
+    .bg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    .bg-opt{position:relative;aspect-ratio:16/10;border-radius:12px;background:#0a1429 center/cover;border:2px solid transparent;overflow:hidden}
+    .bg-opt.on{border-color:var(--gold)}
+    .bg-opt span{position:absolute;left:0;right:0;bottom:0;padding:14px 6px 5px;font-size:11.5px;font-weight:600;color:#fff;text-align:center;background:linear-gradient(transparent,rgba(4,9,22,.85));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    @media (orientation:landscape) and (max-height:480px){.bg-grid{grid-template-columns:repeat(6,1fr)}}
     .who-grid.many{grid-template-columns:repeat(4,1fr);gap:8px}
     .who-grid.many .who-btn{padding:10px 4px;font-size:13.5px}
     .who-grid.many .avatar{--size:46px!important}
@@ -274,6 +280,40 @@ window.App = (function () {
     });
   });
 
+  /* ---------- school mode ----------
+     For when someone might see your screen. This device shows Dad and Mom instead of Daddy and Mommy.
+     Only the words on this screen change: nothing is renamed, and nobody else sees a difference. */
+  let school = !!raw.get('school', false), schoolObs = null;
+  const swapWords = node => {
+    const v = node.nodeValue; if (!v || !/addy|ommy/i.test(v)) return;
+    const p = node.parentNode; if (p && /^(SCRIPT|STYLE|TEXTAREA)$/.test(p.nodeName)) return;
+    const n = v.replace(/\bDaddy\b/g, 'Dad').replace(/\bdaddy\b/g, 'dad').replace(/\bDADDY\b/g, 'DAD').replace(/\bMommy\b/g, 'Mom').replace(/\bmommy\b/g, 'mom').replace(/\bMOMMY\b/g, 'MOM');
+    if (n !== v) node.nodeValue = n;
+  };
+  const sweepWords = root => { const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); let n; while ((n = w.nextNode())) swapWords(n); };
+  function schoolStart() {
+    if (schoolObs || !document.body) return;
+    sweepWords(document.body);
+    schoolObs = new MutationObserver(list => { for (const m of list) { if (m.type === 'characterData') swapWords(m.target); else m.addedNodes.forEach(x => { if (x.nodeType === 3) swapWords(x); else if (x.nodeType === 1) sweepWords(x); }); } });
+    schoolObs.observe(document.body, { childList: true, subtree: true, characterData: true });
+  }
+  App.school = { on: () => school, set(v) { school = !!v; raw.set('school', school); if (school) schoolStart(); else location.reload(); } };
+  if (school) schoolStart();
+
+  /* ---------- settings (kept on this device) ---------- */
+  ui.settings = () => {
+    const bgs = App.scene && App.scene.backgrounds ? App.scene.backgrounds() : [], cur = bgs.length ? App.scene.background() : '';
+    ui.sheet({
+      title: 'Settings', cls: 'set',
+      html: '<label class="switch"><span class="s-text"><b>School mode</b><small>Shows Dad and Mom instead of Daddy and Mommy. Only on this device.</small></span><input type="checkbox" id="setSchool"' + (school ? ' checked' : '') + '></label>' +
+        (bgs.length ? '<span class="label" style="margin-top:10px">Background</span><div class="bg-grid">' + bgs.map(b => '<button class="bg-opt' + (b.id === cur ? ' on' : '') + '" data-bg="' + b.id + '" style="background-image:url(' + b.thumb + ')"><span>' + App.esc(b.name) + '</span></button>').join('') + '</div>' : ''),
+      onMount(el) {
+        $('#setSchool', el).onchange = e => App.school.set(e.target.checked);
+        $$('.bg-opt', el).forEach(b => b.onclick = () => { App.scene.setBackground(b.dataset.bg); $$('.bg-opt', el).forEach(x => x.classList.toggle('on', x === b)); });
+      }
+    });
+  };
+
   /* ---------- who's here ---------- */
   let whoApi = null, whoFirst = false, whoLoading = false;
   const reWho = () => { if (!whoApi) return; const f = whoFirst; whoApi.close(); ui.who(f); };
@@ -294,12 +334,14 @@ window.App = (function () {
         '<div class="who-grid' + (App.names.length > 5 ? ' many' : '') + '">' +
         App.names.map(n => '<button class="who-btn' + (n === ME ? ' on' : '') + '" data-n="' + App.esc(n) + '">' + ui.avatar(n, 64) + '<span>' + App.esc(n) + '</span></button>').join('') +
         (App.cloud && App.names.length < App.maxPeople ? '<button class="who-btn who-add" id="whoAdd"><span class="who-plus">' + App.icon('plus', 26) + '</span><span>' + (App.names.length ? 'Add a name' : 'Add my name') + '</span></button>' : '') + '</div>' +
-        (App.cloud && !first ? '<button class="btn block who-groups" id="whoGroups">' + App.icon('users', 18) + (App.space() ? 'Group and invites' : 'Put this online') + '</button>' : ''),
+        (first ? '' : '<div class="row gap who-row">' + (App.cloud ? '<button class="btn grow" id="whoGroups">' + App.icon('users', 18) + (App.space() ? 'Group' : 'Go online') + '</button>' : '') +
+          '<button class="btn grow" id="whoSet">' + App.icon('sliders', 18) + 'Settings</button></div>'),
       onMount(el, close) {
         const pickMe = n => { const was = ME; App.setMe(n); close(); App.renderShell(); App.route(); if (was !== ME) ui.toast('Hi, ' + ME + '.'); };
         $$('.who-btn[data-n]', el).forEach(b => b.onclick = () => pickMe(b.dataset.n));
         const add = $('#whoAdd', el); if (add) add.onclick = () => App.cloud.addPersonSheet(n => { if (App.data) App.data.init(); if (!ME) pickMe(n); else { close(); ui.who(false); } });
         const grp = $('#whoGroups', el); if (grp) grp.onclick = () => { close(); App.cloud.groupSheet(); };
+        const set = $('#whoSet', el); if (set) set.onclick = () => { close(); ui.settings(); };
         if (!mine) return;
         const row = $('#picRow', el), file = $('#picFile', el);
         const draw = () => { row.innerHTML = picRow(); $('#picPick', row).onclick = () => file.click(); const c = $('#picClear', row); if (c) c.onclick = () => { App.pics.clear(ME); draw(); }; };

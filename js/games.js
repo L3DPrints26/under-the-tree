@@ -218,6 +218,15 @@
   /* record a result for the current person. returns { isBest, leads } */
   function submit(g, v) {
     const me = A.me(), prev = bestOf(g, me), others = ranked(g).filter(r => r.name !== me);
+    if (g.boards && g.valid(v)) {
+      /* each board keeps its own record: your fewest moves and your fastest time can come from different rounds */
+      const won = g.boards.filter(b => !prev || b.val(v) < b.val(prev)), leads = won.some(b => others.length > 0 && others.every(r => b.val(v) < b.val(r.v)));
+      if (won.length && !DEMO) {
+        const all = readAll(), t = all[g.id] && typeof all[g.id] === 'object' ? all[g.id] : {}, rec = Object.assign({}, prev || v);
+        won.forEach(b => { rec[b.key] = b.val(v); }); t[me] = rec; all[g.id] = t; A.store.set('games', all);
+      }
+      return { isBest: won.length > 0, leads, label: won.length > 1 ? 'New best moves and time' : won.length ? won[0].won : '' };
+    }
     const isBest = g.valid(v) && (prev == null || g.better(v, prev));
     const leads = isBest && others.length > 0 && g.better(v, others[0].v);
     if (isBest && !DEMO) {
@@ -451,7 +460,7 @@
 
   /* ================= panels shared by the games ================= */
   function endPanel(title, big, unit, res, note) {
-    const chips = (res.isBest ? '<span class="chip gold">' + A.icon('star') + 'New best</span>' : '') + (res.leads ? '<span class="chip green">' + A.icon('crown') + 'Family champion</span>' : '');
+    const chips = (res.isBest ? '<span class="chip gold">' + A.icon('star') + (res.label || 'New best') + '</span>' : '') + (res.leads ? '<span class="chip green">' + A.icon('crown') + 'Family champion</span>' : '');
     return '<div class="gm-panel" role="dialog" aria-label="' + title + '"><div class="gm-ptitle">' + title + '</div>' +
       '<div class="gm-big">' + big + '</div><div class="gm-unit">' + unit + '</div>' +
       (chips ? '<div class="gm-chips">' + chips + '</div>' : '<p class="muted small">' + note + '</p>') +
@@ -481,13 +490,13 @@
   }
   function boardsHTML() {
     const me = A.me();
-    return '<div class="gm-lb">' + GAMES.map(g => {
-      const rows = ranked(g), rest = A.names.filter(n => !rows.some(r => r.name === n));
-      return '<section><h3>' + A.icon(g.icon, 18) + '<span>' + g.name + '</span></h3><ol>' +
-        rows.map((r, i) => '<li class="' + (i ? '' : 'top') + (r.name === me ? ' me' : '') + '"><span class="gm-rank">' + (i ? i + 1 : A.icon('crown', 17)) + '</span>' + A.ui.avatar(r.name, 28) + '<span class="gm-n">' + esc(r.name) + '</span><b>' + g.long(r.v) + '</b></li>').join('') +
+    return '<div class="gm-lb">' + GAMES.map(g => (g.boards || [null]).map(bd => {
+      const rows = bd ? ranked(g).slice().sort((p, q) => bd.val(p.v) - bd.val(q.v)) : ranked(g), rest = A.names.filter(n => !rows.some(r => r.name === n));
+      return '<section><h3>' + A.icon(g.icon, 18) + '<span>' + g.name + (bd ? ', ' + bd.label : '') + '</span></h3><ol>' +
+        rows.map((r, i) => '<li class="' + (i ? '' : 'top') + (r.name === me ? ' me' : '') + '"><span class="gm-rank">' + (i ? i + 1 : A.icon('crown', 17)) + '</span>' + A.ui.avatar(r.name, 28) + '<span class="gm-n">' + esc(r.name) + '</span><b>' + (bd ? bd.fmt(r.v) : g.long(r.v)) + '</b></li>').join('') +
         rest.map(n => '<li class="none' + (n === me ? ' me' : '') + '"><span class="gm-rank"></span>' + A.ui.avatar(n, 28) + '<span class="gm-n">' + esc(n) + '</span><em>No score</em></li>').join('') +
         '</ol></section>';
-    }).join('') + santaBoard(me) + '</div>';
+    }).join('')).join('') + santaBoard(me) + '</div>';
   }
   /* the Santa chase on the home screen keeps its own scores; they belong on this board too */
   function santaBoard(me) {
@@ -612,24 +621,25 @@
         const o = S.items[i]; if (o.state !== 0) continue;
         const gap = Math.abs(ta - o.ta), far = Math.abs(x - o.x);
         if (gap < .42 && far < lane * .9) return false;
-        if (kind === 0 && o.kind === 0 && far - half * 1.4 > gap * .85) return false;
+        if (kind === 0 && o.kind === 0 && far - half * 1.4 > gap * (.85 + Math.min(.9, Math.max(0, S.t - 40) / 240))) return false;      /* later on you have to move faster between presents */
       }
       return true;
     }
     function spawn() {
-      const d = 1 - Math.exp(-S.t / 45), ex = Math.min(.6, S.t / 330), N = lanes, mouth = (baseY + geo.my) / H;
-      const coalP = S.n < 4 ? 0 : .1 + .16 * d + .12 * ex, starP = S.t > 6 ? .07 : 0, r = Math.random();
+      /* d: the first ramp (about a minute). ex: a slower second ramp. heat: after 40 seconds it never stops climbing. */
+      const d = 1 - Math.exp(-S.t / 30), ex = Math.min(.6, S.t / 200), heat = Math.max(0, S.t - 40) / 60, N = lanes, mouth = (baseY + geo.my) / H;
+      const coalP = S.n < 4 ? 0 : Math.min(.5, .1 + .16 * d + .12 * ex + .07 * heat), starP = S.t > 6 ? .07 : 0, r = Math.random();
       let kind = 0;
       /* a heart to win back: only while one is missing, one at a time, and not often */
       if (S.lives < 3 && S.t >= S.heartAt && Math.random() < .07 && !S.items.some(o => o.kind === 3)) kind = 3;
       else if (r < coalP && !(S.lastKind === 2 && d < .55)) kind = 2;
       else if (r < coalP + starP) kind = 1;
       let want;
-      if (kind === 2) want = Math.random() < .5 ? Math.floor(S.x * N) : (Math.random() * N) | 0;
+      if (kind === 2) want = Math.random() < Math.min(.85, .5 + .12 * heat) ? Math.floor(S.x * N) : (Math.random() * N) | 0;      /* coal aims at the sack more and more */
       else { const reach = 2 + Math.round(d * 3); want = S.lastGift + Math.round(A.rand(-reach, reach)); }
       want = clamp(want, 0, N - 1);
       const size = kind === 0 ? 1.04 : kind === 1 ? 1.02 : kind === 2 ? .92 : .96, y0 = -(size * u * .7) / H;
-      const vy = (.36 + .38 * d + .32 * ex) * mouth * A.rand(.95, 1.05) * (kind === 1 ? 1.15 : kind === 3 ? .88 : 1), ta = S.t + (mouth - y0) / vy;
+      const vy = Math.min(2.3, .4 + .42 * d + .32 * ex + .2 * heat) * mouth * A.rand(.95, 1.05) * (kind === 1 ? 1.15 : kind === 3 ? .88 : 1), ta = S.t + (mouth - y0) / vy;
       /* the lane we wanted first, then its neighbours, until one is fair */
       let lane = -1, x = 0;
       for (let k = 0; k < N * 2 && lane < 0; k++) {
@@ -643,7 +653,7 @@
         vr: A.rand(1.2, 2.4) * (Math.random() < .5 ? -1 : 1), state: 0, t: 0, lost: false });
       S.lastLane = lane; S.lastKind = kind; if (kind < 2) S.lastGift = lane; S.n++;
       if (kind === 3) S.heartAt = S.t + 24;
-      S.spawn = (1.2 - .52 * d - .16 * ex) * A.rand(.82, 1.18) * (d > .55 && Math.random() < .18 ? .5 : 1);
+      S.spawn = Math.max(.24, (1.15 - .52 * d - .16 * ex) / (1 + .45 * heat)) * A.rand(.82, 1.18) * (d > .55 && Math.random() < .18 ? .5 : 1);
     }
 
     /* ----- effects ----- */
@@ -1016,7 +1026,7 @@
     }
     function resultPanel(res, r) {
       const b = bestOf(game, me);
-      setLayer(endPanel('All matched', r.moves, 'moves in ' + clock(r.time), res, 'Your best is ' + (b ? b.moves + ' moves in ' + clock(b.time) : 'still to come') + '.'));
+      setLayer(endPanel('All matched', r.moves, 'moves in ' + clock(r.time), res, (b ? 'Your fewest moves: ' + b.moves + '. Your fastest time: ' + clock(b.time) + '.' : 'Your best is still to come.')));
       focusAgain(lay);
     }
     function finish() {
@@ -1337,7 +1347,9 @@
       short: v => String(v), long: v => String(v), art: artCatch, mount: mountCatch },
     { id: 'memory', name: 'Memory Match', icon: 'gmcards', how: 'Flip two cards at a time and find all eight pairs.',
       valid: v => !!v && typeof v === 'object' && v.moves > 0 && v.time > 0, better: (a, b) => a.moves < b.moves || (a.moves === b.moves && a.time < b.time),
-      short: v => v.moves + ' moves', long: v => v.moves + ' moves<i>' + clock(v.time) + '</i>', artHTML: MEM_ART, mount: mountMemory },
+      short: v => v.moves + ' moves, ' + clock(v.time), long: v => v.moves + ' moves<i>' + clock(v.time) + '</i>', artHTML: MEM_ART, mount: mountMemory,
+      boards: [{ key: 'moves', label: 'fewest moves', won: 'Fewest moves yet', val: v => v.moves, fmt: v => v.moves + '<i>moves</i>' },
+        { key: 'time', label: 'fastest time', won: 'Fastest time yet', val: v => v.time, fmt: v => clock(v.time) }] },
     { id: 'stack', name: 'Gift Tower', icon: 'gmstack', how: 'Tap to drop each present and build the tallest tower.',
       valid: v => typeof v === 'number' && isFinite(v) && v > 0, better: (a, b) => a > b,
       short: v => String(v), long: v => v + ' high', art: artStack, mount: mountStack }

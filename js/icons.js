@@ -77,6 +77,7 @@
     watch: '<rect x="7" y="7" width="10" height="10" rx="2.500"/><path d="M9 7l.7-3.500h4.600L15 7M9 17l.7 3.500h4.600L15 17M12 10v2.200l1.500 1"/>',
     spool: '<rect x="5" y="3.500" width="14" height="3.500" rx="1"/><rect x="5" y="17" width="14" height="3.500" rx="1"/><path d="M8 7v10M16 7v10M8 10.500l8-2M8 13.500l8-2M8 16.500l8-2"/>',
     makeup: '<path d="M9 21v-8h6v8zM10 13V9.500l4-3V13"/>',
+    sliders: '<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>',
     chip: '<rect x="2.500" y="7" width="19" height="8.500" rx="1.200"/><path d="M5.500 10h3v2.500h-3zM10.500 10h3v2.500h-3zM15.500 10h3v2.500h-3zM5 15.500V18M8 15.500V18M11 15.500V18M14 15.500V18M17 15.500V18M20 15.500V18"/>'
   };
   App.icons = I;

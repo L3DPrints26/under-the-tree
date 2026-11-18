@@ -5,10 +5,29 @@
   'use strict';
   const A = window.App, $ = A.$, rand = A.rand, pick = A.pick;
   let W = innerWidth, H = innerHeight, LOW = A.reduced;
-  const PHOTO = 'https://images.unsplash.com/photo-1643498091519-c1006f563bc9';
+  /* real photos to choose from (Unsplash). The choice is kept on this device only. */
+  const PHOTOS = [
+    ['trees', 'Snowy trees', '1643498091519-c1006f563bc9', 'center 55%'],
+    ['cabin', 'Cabin', '1741948924635-13a7ddbc6a05', 'center 62%'],
+    ['aurora', 'Northern lights', '1771944162983-41647a1298af', 'center 45%'],
+    ['pine', 'Pine and lights', '1513297887119-d46091b24bfa', 'center'],
+    ['lights', 'Christmas lights', '1544438369-a34666f8ff77', 'center'],
+    ['fire', 'Fireplace', '1543393470-b2c833b98dce', 'center 60%']
+  ];
+  const photoUrl = (id, q) => 'https://images.unsplash.com/photo-' + id + '?' + q + '&auto=format&fit=crop';
+  let bgTok = 0;
+  function paintBg(key) {
+    const p = PHOTOS.find(x => x[0] === key) || PHOTOS[0], ph = $('#bgPhoto'), tok = ++bgTok;
+    const px = Math.min(2400, Math.ceil(Math.max(innerWidth, innerHeight) * Math.min(2, devicePixelRatio || 1) / 400) * 400);
+    const url = photoUrl(p[2], 'w=' + px + '&q=72'), img = new Image();
+    ph.classList.remove('on');
+    img.onload = () => { if (tok !== bgTok) return; setTimeout(() => { if (tok !== bgTok) return; ph.style.backgroundImage = 'url("' + url + '")'; ph.style.backgroundPosition = p[3]; ph.classList.add('on'); }, ph.style.backgroundImage ? 350 : 0); };
+    img.src = url;
+  }
 
   A.css(`
-    #scene .photo{position:absolute;inset:0;background-size:cover;background-position:center 55%;opacity:0;transition:opacity 1.4s ease}
+    #scene .photo{position:absolute;inset:0;background-size:cover;background-position:center 55%;opacity:0;transition:opacity .35s ease}
+    #scene .photo.on{transition:opacity 1.1s ease}
     #scene .photo.on{opacity:1}
     #scene .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(4,9,22,.58) 0%,rgba(4,9,22,.2) 34%,rgba(4,9,22,.28) 66%,rgba(4,9,22,.74) 100%)}
     #santaShield{position:fixed;inset:0;z-index:19;display:none;touch-action:none;background:rgba(4,9,22,.45)}
@@ -284,16 +303,16 @@
   A.scene = {
     start() {
       buildSanta(); resize();
-      const ph = $('#bgPhoto'), px = Math.min(2400, Math.ceil(Math.max(innerWidth, innerHeight) * Math.min(2, devicePixelRatio || 1) / 400) * 400);
-      const url = PHOTO + '?w=' + px + '&q=72&auto=format&fit=crop', img = new Image();
-      img.onload = () => { ph.style.backgroundImage = 'url("' + url + '")'; ph.classList.add('on'); };
-      img.src = url;
+      paintBg(A.store.raw.get('bg', 'trees'));
       if (LOW) document.body.classList.add('low');
       requestAnimationFrame(frame);
       A.on('resize', resize);
       document.addEventListener('pointerdown', e => { const c = e.target.classList; if (e.target.id === 'page' || (c && (c.contains('tree-area') || c.contains('count') || c.contains('orns') || c.contains('g-row')))) fxApi.puff(e.clientX, e.clientY); });
     },
     callSanta() { return launch(); },
+    backgrounds: () => PHOTOS.map(p => ({ id: p[0], name: p[1], thumb: photoUrl(p[2], 'w=240&h=150&q=60') })),
+    background: () => { const k = A.store.raw.get('bg', 'trees'); return PHOTOS.some(p => p[0] === k) ? k : 'trees'; },
+    setBackground(key) { A.store.raw.set('bg', key); paintBg(key); },
     blizzard
   };
   if (A.qs.has('debug')) window.__dbg = { launch, frame, hit: () => hit({ clientX: S ? S.x : 100, clientY: S ? S.y : 100 }), end: () => { if (S) S.until = 0; }, state: () => S && { mode: S.mode, move: S.move, x: S.x | 0, y: S.y | 0, count: S.count, combo: S.combo, alpha: +S.alpha.toFixed(2), v: S.v | 0, face: +S.face.toFixed(2) }, shield: () => !!(shield && shield.classList.contains('on')), cooling: () => performance.now() < coolUntil };
