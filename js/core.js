@@ -333,7 +333,12 @@ window.App = (function () {
   const busy = () => ui.sheetOpen() || !!document.querySelector('#santaShield.on') || (curName === 'games' && App.parse().args.length > 0) || !!(current && current.busy && current.busy());
   App.softRefresh = () => { clearTimeout(softT); softT = setTimeout(function tick() { if (!ME || !current) return; if (busy()) { softT = setTimeout(tick, 900); return; } App.refresh(); }, 260); };
   App.on('sync', keys => {
-    if (keys.indexOf('people') >= 0) { App.loadPeople(); if (ME && App.names.indexOf(ME) < 0) ME = null; App.renderShell(); if (whoApi) reWho(); }
+    if (keys.indexOf('people') >= 0) {
+      App.loadPeople(); if (ME && App.names.indexOf(ME) < 0) ME = null;
+      /* test hook: ?me=Name also works on a phone that has only just joined */
+      if (!ME && App.names.indexOf(App.qs.get('me')) >= 0) { App.setMe(App.qs.get('me')); if (whoApi) whoApi.close(); App.renderShell(); App.route(); App.softRefresh(); return; }
+      App.renderShell(); if (whoApi) reWho();
+    }
     if (!ME) { if (!ui.sheetOpen()) ui.who(true); return; }
     App.softRefresh();
   });
