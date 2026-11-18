@@ -194,6 +194,22 @@ window.App = (function () {
   };
   App.photos.ready.then(paintPics);
   App.on('photo', paintPics);
+
+  /* ---------- who is online ----------
+     The group keeps a short note for every open app (see cloud.js). Anyone on that list gets a green
+     dot on their picture and their ornament, painted with one style rule so nothing is redrawn. */
+  const onCss = document.createElement('style'); document.head.appendChild(onCss);
+  App.online = () => {
+    const st = App.cloud ? App.cloud.status() : 'off'; if (st === 'off' || st === 'offline') return [];
+    const o = App.store.get('online', {}) || {}, on = {}; Object.keys(o).forEach(k => { if (o[k] && o[k].n) on[o[k].n] = 1; });
+    return App.names.filter(n => on[n]);
+  };
+  const paintOnline = () => {
+    onCss.textContent = App.online().map(n => '.avatar[data-n="' + n + '"]::after{content:"";position:absolute;right:-4%;bottom:-4%;width:30%;height:30%;min-width:8px;min-height:8px;border-radius:50%;background:#3ddc84;box-shadow:0 0 0 2px #0b1730}' +
+      '.orn[data-name="' + n + '"] .olabel::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#3ddc84;margin-right:5px;vertical-align:1px}').join('');
+  };
+  App.on('sync', keys => { if (keys.indexOf('online') >= 0 || keys.indexOf('people') >= 0) paintOnline(); });
+  App.on('cloud', paintOnline);
   App.on('people', paintPics);
   App.on('sync', keys => { if (keys.indexOf('pics') >= 0 || keys.indexOf('people') >= 0) { PICS = App.store.get('pics', {}) || {}; paintPics(); } });
   App.css(`
@@ -203,6 +219,7 @@ window.App = (function () {
     .me-acts{margin-top:8px;flex-wrap:wrap;gap:8px}
     .who-sub{margin-top:14px;font-size:13.5px}
     .who-sub+.who-grid{margin-top:8px}
+    .avatar{position:relative}
     .who-btn.on{border-color:var(--gold)}
     .who-btn>span:last-child{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .who-plus{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;border:1.5px dashed var(--line2);color:var(--muted)}
@@ -333,6 +350,7 @@ window.App = (function () {
   const busy = () => ui.sheetOpen() || !!document.querySelector('#santaShield.on') || (curName === 'games' && App.parse().args.length > 0) || !!(current && current.busy && current.busy());
   App.softRefresh = () => { clearTimeout(softT); softT = setTimeout(function tick() { if (!ME || !current) return; if (busy()) { softT = setTimeout(tick, 900); return; } App.refresh(); }, 260); };
   App.on('sync', keys => {
+    if (keys.every(k => k === 'online')) return;          /* someone opened or closed the app: only the dots change */
     if (keys.indexOf('people') >= 0) {
       App.loadPeople(); if (ME && App.names.indexOf(ME) < 0) ME = null;
       /* test hook: ?me=Name also works on a phone that has only just joined */

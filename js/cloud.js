@@ -75,7 +75,7 @@
         });
       })
       .then(u => {
-        db.ref('.info/connected').on('value', s => { connected = !!s.val(); A.emit('cloud', status()); if (connected) flush(); });
+        db.ref('.info/connected').on('value', s => { connected = !!s.val(); A.emit('cloud', status()); if (connected) { flush(); announce(); } });
         return u;
       });
     starting.catch(() => { starting = null; });
@@ -188,11 +188,24 @@
   }
   A.on('photo:miss', id => { if (!gid) return; if (attached && gotFirst) fetchPhoto(id); else missed.add(id); });
 
+  /* ---------- who is online ----------
+     Each open app leaves a small note under the group saying who is using it. The server takes the
+     note away by itself when that phone closes the app or loses its connection. */
+  let hereRef = null;
+  function announce() {
+    if (!attached || !user || !connected) return;
+    const me = A.me(); hereRef = hereRef || kvRef.child('online/' + enc(user.uid));
+    if (!me) { hereRef.remove().catch(() => {}); return; }
+    hereRef.onDisconnect().remove().catch(() => {});
+    hereRef.set(JSON.stringify({ n: me })).catch(() => {});
+  }
+  A.on('me', announce);
+
   function attach() {
     gid = A.space(); if (!gid) return;
     start().then(() => {
       const g = db.ref('groups/' + gid);
-      kvRef = g.child('kv'); photoRef = g.child('photos'); attached = true;
+      kvRef = g.child('kv'); photoRef = g.child('photos'); attached = true; announce();
       g.child('members/' + user.uid).set(Date.now()).catch(() => {});
       kvRef.on('value', onValue, err => { console.warn('sync read', err && err.code); attached = false; A.emit('cloud', status()); });
     }).catch(() => { A.emit('cloud', status()); setTimeout(attach, 20000); });
@@ -382,7 +395,7 @@
       html: '<div class="gp-cols"><div class="gp-card"><h3>Invite code</h3><span class="gp-code">' + pretty(cur) + '</span>' +
         '<span class="gp-state' + (st === 'offline' ? '' : ' on') + '"><i></i>' + stText + '</span>' +
         '<div class="gp-btns"><button class="btn primary" id="gpInvite">' + A.icon('link', 18) + 'Send an invite</button></div></div>' +
-        '<div><button class="gp-card gp-tap" id="gpPeople"><h3>People</h3><span class="gp-faces">' + A.names.map(n => A.ui.avatar(n, 30)).join('') + '</span><span class="gp-more">Add or remove</span></button>' +
+        '<div><button class="gp-card gp-tap" id="gpPeople"><h3>People</h3><span class="gp-faces">' + A.names.map(n => A.ui.avatar(n, 30)).join('') + '</span><span class="gp-more">' + (A.online().length ? A.online().length + ' online now. ' : '') + 'Add or remove</span></button>' +
         '<div class="gp-btns gp-foot"><button class="btn sm" id="gpOther">' + A.icon('users', 16) + (nOther ? 'Other groups (' + nOther + ')' : 'Other groups') + '</button>' +
         '<button class="btn sm danger" id="gpLeave">Leave this group</button></div></div></div>',
       onMount(el, close) {

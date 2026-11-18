@@ -23,6 +23,15 @@
     @keyframes chbump{from{transform:scale(1.5)}to{transform:scale(1)}}
     #chase b{display:inline-block;min-width:1.4em;text-align:center}
     #chaseDone{height:34px;padding:0 14px;border-radius:999px;background:#111a2e;color:#fff;font-weight:600;font-size:13.5px}
+    #chase.gold i{background:#d9a520}
+    #chase.gold small{color:#a8740c;font-weight:700}
+    .sb-list{list-style:none;display:flex;flex-direction:column;gap:2px;margin:12px 0 14px}
+    .sb-list li{display:flex;align-items:center;gap:10px;min-height:40px;padding:4px 12px 4px 8px;border-radius:12px}
+    .sb-list li.me{background:var(--surface2)}
+    .sb-list li b{font-weight:600;font-variant-numeric:tabular-nums}
+    .sb-rank{width:22px;display:grid;place-items:center;color:var(--muted);font-weight:600}
+    .sb-list li:first-child .sb-rank{color:var(--gold)}
+    .sb-wait .sb-acts{opacity:.45}
   `);
 
   /* ---------- santa artwork ---------- */
@@ -118,75 +127,138 @@
   }
 
   /* ---------- santa ----------
-     He flies like something with momentum: a heading that turns smoothly, long swooping arcs,
-     a gentle bob, pitching up and down as he climbs and dives, and a real turn-around when he reverses. */
-  const el = $('#santa'); let S = null, hud = null, shield = null;
-  const GAME_MS = 14000;
+     He only comes out when called. Every visit is different: he comes in from a random edge and
+     strings random moves together (swoops, loops, zigzags, dashes, slow glides), and now and then
+     he vanishes in a puff of snow and pops up somewhere else. Quick hits in a row build a combo. */
+  const el = $('#santa'); let S = null, hud = null, shield = null, coolUntil = 0, board = null;
+  const GAME_MS = 16000, COOL_MS = 1500, MOVES = ['swoop', 'loop', 'zigzag', 'dash', 'glide', 'blink'];
+  const MUL = { swoop: 1, loop: 1.05, zigzag: .95, dash: 1.65, glide: .4, blink: 1 };
   const wrap = a => Math.atan2(Math.sin(a), Math.cos(a));
   function ensureUi() {
     if (hud) return;
     shield = document.createElement('div'); shield.id = 'santaShield'; document.body.appendChild(shield);
-    shield.addEventListener('pointerdown', e => { e.preventDefault(); fxApi.puff(e.clientX, e.clientY); });
+    shield.addEventListener('pointerdown', e => { e.preventDefault(); if (S && S.mode === 'fly') fxApi.puff(e.clientX, e.clientY); });
     hud = document.createElement('div'); hud.id = 'chase';
     hud.innerHTML = A.icon('gift', 20) + '<b>0</b><small>Tap Santa</small><button id="chaseDone">Done</button><i></i>';
     document.body.appendChild(hud);
     $('#chaseDone', hud).onclick = () => { if (S && S.mode === 'fly') S.until = 0; };
   }
+  /* pick what he does next, never the same thing twice in a row */
+  function nextMove(t, first) {
+    let m; do { m = pick(MOVES); } while (m === S.move || (first && (m === 'blink' || m === 'glide')));
+    S.move = m; S.zig = Math.random() < .5 ? -1 : 1; S.nextWander = 0; S.fade = m === 'blink' ? -1 : 0;
+    S.moveUntil = m === 'blink' ? Infinity : t + (m === 'dash' ? rand(700, 1000) : m === 'glide' ? rand(900, 1300) : m === 'loop' ? rand(1500, 2100) : rand(1600, 3000));
+  }
   function launch() {
-    if (S) return false;
-    ensureUi();
-    el.style.display = 'block'; const w = el.offsetWidth || 300, h = w * 124 / 470, left = Math.random() < .5, now = performance.now();
+    if (S || performance.now() < coolUntil) return false;
+    ensureUi(); if (board) { const bd = board; board = null; bd.close(); }
+    el.style.display = 'block'; el.style.opacity = 1; el.style.pointerEvents = '';
+    const w = el.offsetWidth || 300, h = w * 124 / 470, now = performance.now(), side = (Math.random() * 3) | 0;
     const base = Math.max(300, Math.min(600, (W + H) * .27));
-    S = { mode: 'fly', w, h, x: left ? -w * .6 : W + w * .6, y: H * rand(.28, .45), th: left ? rand(-.2, .2) : Math.PI + rand(-.2, .2), om: 0, omT: 0, nextWander: 0,
-      base, v: base, boost: 0, face: left ? 1 : -1, faceT: left ? 1 : -1, rot: 0, until: now + GAME_MS, t0: now, count: 0, hits: 0, last: 0, evadeUntil: 0, evadeDir: 1, exitDir: 1 };
-    shield.classList.add('on'); hud.classList.add('on'); $('b', hud).textContent = '0'; $('small', hud).textContent = 'Tap Santa';
+    /* in from the left, the right or the top, at a random spot and angle */
+    const x = side === 0 ? -w * .6 : side === 1 ? W + w * .6 : W * rand(.25, .75), y = side === 2 ? -h : H * rand(.22, .6);
+    const th = side === 0 ? rand(-.5, .5) : side === 1 ? Math.PI + rand(-.5, .5) : Math.PI / 2 + rand(-.7, .7), f = Math.cos(th) >= 0 ? 1 : -1;
+    S = { mode: 'fly', w, h, x, y, th, om: 0, omT: 0, nextWander: 0, base, v: base, mul: 1, boost: 0, face: f, faceT: f, rot: 0, until: now + GAME_MS, count: 0, hits: 0, last: 0,
+      evadeUntil: 0, evadeDir: 1, exitDir: 1, move: '', moveUntil: 0, zig: 1, fade: 0, wait: 0, alpha: 1, combo: 0, lastHit: 0, bestCombo: 0, gold: 0 };
+    nextMove(now, true);
+    shield.classList.add('on'); hud.classList.add('on'); hud.classList.remove('gold'); $('b', hud).textContent = '0'; $('small', hud).textContent = 'Tap Santa';
     return true;
   }
   function hit(e) {
-    if (!S || S.mode !== 'fly') return;
-    const now = performance.now(), n = 2 + ((Math.random() * 3) | 0);
-    S.hits++; S.count += n; S.v = Math.min(S.v * 1.07, S.base * 1.6); S.boost = .6;
+    if (!S || S.mode !== 'fly' || S.alpha < .5) return;
+    const now = performance.now(), gold = S.until - now < 4000;
+    /* hits close together build a combo, and the last few seconds count double */
+    S.combo = now - S.lastHit < 1400 ? Math.min(5, S.combo + 1) : 1; S.lastHit = now; S.bestCombo = Math.max(S.bestCombo, S.combo);
+    const n = (2 + ((Math.random() * 3) | 0) + (S.combo - 1) * 2) * (gold ? 2 : 1);
+    S.hits++; S.count += n; S.v = Math.min(S.v * 1.06, S.base * 1.6); S.boost = .6;
     const dC = wrap(Math.atan2(H * .45 - S.y, W * .5 - S.x) - S.th), edge = S.x < W * .3 || S.x > W * .7 || S.y < H * .3 || S.y > H * .68;
     S.evadeUntil = now + 420; S.evadeDir = edge ? (dC >= 0 ? 1 : -1) : (Math.random() < .5 ? -1 : 1);
-    throwGifts(S.x, S.y + S.h * .1, n);
+    throwGifts(S.x, S.y + S.h * .1, Math.min(6, 2 + S.combo));
     fxApi.text(e.clientX, e.clientY - 26, '+' + n, '#ffe28a');
+    if (S.combo > 1) fxApi.text(e.clientX, e.clientY - 58, 'x' + S.combo, '#8ff0e6');
     fxApi.confetti(e.clientX, e.clientY, 8);
-    $('b', hud).textContent = S.count; $('small', hud).textContent = 'presents'; hud.classList.remove('bump'); void hud.offsetWidth; hud.classList.add('bump');
+    /* sometimes he has had enough of that spot and pops up somewhere else */
+    if (S.move !== 'blink' && Math.random() < .3) { S.move = 'blink'; S.fade = -1; S.moveUntil = Infinity; }
+    $('b', hud).textContent = S.count; $('small', hud).textContent = gold ? 'double!' : 'presents'; hud.classList.remove('bump'); void hud.offsetWidth; hud.classList.add('bump');
+  }
+  const scores = () => { const best = A.store.get('santaBest', {}) || {}; return A.names.map(n => ({ n, v: +best[n] || 0 })).filter(r => r.v > 0).sort((p, q) => q.v - p.v); };
+  function showBoard(got, isBest, prev) {
+    const me = A.me();
+    board = A.ui.sheet({
+      title: got + ' presents' + (isBest && prev ? '. New best.' : ''),
+      html: '<p class="muted">' + (isBest ? (prev ? 'You beat your old best of ' + prev + '.' : 'That is your first score on the board.') : 'Your best is ' + prev + '.') + '</p>' +
+        '<ol class="sb-list">' + scores().map((r, i) => '<li' + (r.n === me ? ' class="me"' : '') + '><span class="sb-rank">' + (i ? i + 1 : A.icon('crown', 17)) + '</span>' + A.ui.avatar(r.n, 28) + '<span class="grow">' + A.esc(r.n) + '</span><b>' + r.v + '</b></li>').join('') + '</ol>' +
+        '<div class="row gap sb-acts"><button class="btn grow" data-close>Done</button><button class="btn primary grow" id="sbAgain">' + A.icon('sleigh', 18) + 'Go again</button></div>',
+      onMount(sh, close) {
+        /* nothing on this card can be tapped during the pause either */
+        const back = sh.parentNode; back.style.pointerEvents = 'none'; sh.classList.add('sb-wait');
+        setTimeout(() => { back.style.pointerEvents = ''; sh.classList.remove('sb-wait'); }, COOL_MS);
+        $('#sbAgain', sh).onclick = () => { board = null; close(); if (S) { S = null; el.style.display = 'none'; } coolUntil = 0; launch(); };
+      },
+      onClose() { board = null; }
+    });
   }
   function finish() {
-    const me = A.me() || 'Someone', best = A.store.get('santaBest', {}), prev = best[me] || 0, got = S.count;
-    if (got > prev) { best[me] = got; A.store.set('santaBest', best); }
-    hud.classList.remove('on'); shield.classList.remove('on');
-    if (got) A.ui.toast(got + ' presents' + (got > prev && prev ? '. New best.' : prev > got ? '. Your best is ' + prev + '.' : '.'));
+    const me = A.me() || 'Someone', best = A.store.get('santaBest', {}) || {}, prev = +best[me] || 0, got = S.count, isBest = got > prev;
+    if (isBest) { best[me] = got; A.store.set('santaBest', best); }
+    hud.classList.remove('on');
+    /* a short pause before anything behind can be tapped, so a last frantic tap never lands on a button */
+    coolUntil = performance.now() + COOL_MS;
+    setTimeout(() => { if (!S || S.mode !== 'fly') shield.classList.remove('on'); }, COOL_MS);
+    if (got) showBoard(got, isBest, prev);
   }
   function stepSanta(t) {
     if (!S) return;
     const dt = Math.max(0, Math.min(.05, (t - (S.last || t)) / 1000)); S.last = t;
+    let mulT = 1;
     if (S.mode === 'fly') {
-      if (t > S.until) { S.mode = 'exit'; S.exitDir = Math.cos(S.th) >= 0 ? 1 : -1; finish(); }
+      if (t > S.until) { S.mode = 'exit'; S.exitDir = Math.cos(S.th) >= 0 ? 1 : -1; S.fade = 0; S.alpha = 1; finish(); }
       else {
-        $('i', hud).style.transform = 'scaleX(' + Math.max(0, (S.until - t) / GAME_MS).toFixed(3) + ')';
-        if (t > S.nextWander) { S.omT = rand(-1.4, 1.4); S.nextWander = t + rand(600, 1500); }
+        const left = S.until - t, mx = S.w * .32, top = S.h * .6 + 76, bot = H - S.h * .6 - 84;
+        $('i', hud).style.transform = 'scaleX(' + Math.max(0, left / GAME_MS).toFixed(3) + ')';
+        if (left < 4000 && !S.gold) { S.gold = 1; hud.classList.add('gold'); $('small', hud).textContent = 'double!'; }
+        if (t > S.moveUntil) nextMove(t);
+        /* vanish, jump to a random spot, come back */
+        if (S.move === 'blink') {
+          if (S.fade < 0) {
+            S.alpha -= dt / .14;
+            if (S.alpha <= 0) {
+              S.alpha = 0; fxApi.puff(S.x, S.y);
+              S.x = rand(mx + 20, Math.max(mx + 30, W - mx - 20)); S.y = rand(top, Math.max(top + 10, bot));
+              S.th = Math.atan2(H * .45 - S.y, W * .5 - S.x) + rand(-1, 1); S.om = 0; S.face = S.faceT = Math.cos(S.th) >= 0 ? 1 : -1; S.fade = 1; S.wait = t + 260;
+            }
+          } else if (t > S.wait) {
+            if (S.alpha === 0) fxApi.puff(S.x, S.y);
+            S.alpha += dt / .16 + .001;
+            if (S.alpha >= 1) { S.alpha = 1; nextMove(t); }
+          }
+        }
+        let target;
+        if (S.move === 'loop') target = S.zig * 3.7;
+        else if (S.move === 'zigzag') { if (t > S.nextWander) { S.zig = -S.zig; S.nextWander = t + rand(330, 480); } target = S.zig * 3.1; }
+        else if (S.move === 'dash' || S.move === 'glide') target = 0;
+        else { if (t > S.nextWander) { S.omT = rand(-1.4, 1.4); S.nextWander = t + rand(600, 1500); } target = S.omT; }
+        mulT = MUL[S.move] || 1;
         /* look ahead: if he is about to leave the play area, bend the path back toward the middle */
-        const k = Math.max(1, S.v * (1 + S.boost) / S.base), look = Math.min(S.v * .6, Math.min(W, H) * .34), ax = S.x + Math.cos(S.th) * look, ay = S.y + Math.sin(S.th) * look;
-        const mx = S.w * .32, top = S.h * .6 + 76, bot = H - S.h * .6 - 84;
-        let target = S.omT;
+        const k = Math.max(1, S.v * S.mul * (1 + S.boost) / S.base), look = Math.min(S.v * S.mul * .6, Math.min(W, H) * .34), ax = S.x + Math.cos(S.th) * look, ay = S.y + Math.sin(S.th) * look;
         if (ax < mx || ax > W - mx || ay < top || ay > bot) { const d = wrap(Math.atan2(H * .45 - S.y, W * .5 - S.x) - S.th); target = Math.sign(d) * 3 * k * Math.min(1, Math.abs(d) * 1.4); }
         if (t < S.evadeUntil && !(S.x < mx || S.x > W - mx || S.y < top || S.y > bot)) target = S.evadeDir * 4.4;
         S.om += (target - S.om) * Math.min(1, dt * 4.2 * k); S.th += S.om * dt;
       }
     }
-    if (S.mode === 'exit') S.th += wrap((S.exitDir > 0 ? 0 : Math.PI) - S.th) * Math.min(1, dt * 2.6);
+    if (S.mode === 'exit') { S.th += wrap((S.exitDir > 0 ? 0 : Math.PI) - S.th) * Math.min(1, dt * 2.6); mulT = 2.2; }
+    S.mul += (mulT - S.mul) * Math.min(1, dt * 5);
     S.boost *= Math.max(0, 1 - dt * 1.9);
-    const sp = S.v * (1 + S.boost) * (S.mode === 'exit' ? 1.3 : 1), cs = Math.cos(S.th), sn = Math.sin(S.th);
+    const sp = S.alpha <= 0 ? 0 : S.v * S.mul * (1 + S.boost), cs = Math.cos(S.th), sn = Math.sin(S.th);
     S.x += cs * sp * dt; S.y += sn * sp * dt;
     if (cs > .14) S.faceT = 1; else if (cs < -.14) S.faceT = -1;
     S.face += (S.faceT - S.face) * Math.min(1, dt * 13);
     const pitch = Math.max(-30, Math.min(30, Math.atan2(sn, Math.abs(cs) + .3) * 57.3 * .8)); S.rot += (pitch - S.rot) * Math.min(1, dt * 6);
-    if (S.mode === 'exit' && (S.x < -S.w * .7 || S.x > W + S.w * .7)) { S = null; el.style.display = 'none'; return; }
+    if (S.mode === 'exit' && (S.x < -S.w * .7 || S.x > W + S.w * .7 || S.y < -S.h * 1.5 || S.y > H + S.h * 1.5)) { S = null; el.style.display = 'none'; return; }
     const f = Math.abs(S.face) < .08 ? (S.face < 0 ? -.08 : .08) : S.face, yb = S.y + Math.sin(t / 380) * 5;
-    el.style.transform = `translate3d(${(S.x - S.w / 2).toFixed(1)}px,${(yb - S.h / 2).toFixed(1)}px,0) scaleX(${f.toFixed(3)}) rotate(${(S.rot * Math.abs(f)).toFixed(2)}deg)`;
-    if (!LOW) { const rx = S.x - S.faceT * S.w * .46, ry = yb + S.h * .28; fxApi.sparkle(rx + rand(-4, 4), ry + rand(-7, 7)); fxApi.sparkle(rx + rand(-10, 10), ry + rand(-10, 10)); }
+    el.style.transform = 'translate3d(' + (S.x - S.w / 2).toFixed(1) + 'px,' + (yb - S.h / 2).toFixed(1) + 'px,0) scaleX(' + f.toFixed(3) + ') rotate(' + (S.rot * Math.abs(f)).toFixed(2) + 'deg)';
+    el.style.opacity = S.alpha.toFixed(2); el.style.pointerEvents = S.alpha < .5 ? 'none' : '';
+    if (!LOW && S.alpha > .6) { const rx = S.x - S.faceT * S.w * .46, ry = yb + S.h * .28; fxApi.sparkle(rx + rand(-4, 4), ry + rand(-7, 7)); fxApi.sparkle(rx + rand(-10, 10), ry + rand(-10, 10)); }
   }
   el.addEventListener('pointerdown', e => { e.preventDefault(); hit(e); });
 
@@ -224,5 +296,5 @@
     callSanta() { return launch(); },
     blizzard
   };
-  if (A.qs.has('debug')) window.__dbg = { launch, frame, hit: () => hit({ clientX: S ? S.x : 100, clientY: S ? S.y : 100 }), state: () => S && { mode: S.mode, x: S.x | 0, y: S.y | 0, count: S.count, v: S.v | 0, face: +S.face.toFixed(2) }, shield: () => !!(shield && shield.classList.contains('on')) };
+  if (A.qs.has('debug')) window.__dbg = { launch, frame, hit: () => hit({ clientX: S ? S.x : 100, clientY: S ? S.y : 100 }), end: () => { if (S) S.until = 0; }, state: () => S && { mode: S.mode, move: S.move, x: S.x | 0, y: S.y | 0, count: S.count, combo: S.combo, alpha: +S.alpha.toFixed(2), v: S.v | 0, face: +S.face.toFixed(2) }, shield: () => !!(shield && shield.classList.contains('on')), cooling: () => performance.now() < coolUntil };
 })();

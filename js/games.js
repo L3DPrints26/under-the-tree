@@ -487,7 +487,15 @@
         rows.map((r, i) => '<li class="' + (i ? '' : 'top') + (r.name === me ? ' me' : '') + '"><span class="gm-rank">' + (i ? i + 1 : A.icon('crown', 17)) + '</span>' + A.ui.avatar(r.name, 28) + '<span class="gm-n">' + esc(r.name) + '</span><b>' + g.long(r.v) + '</b></li>').join('') +
         rest.map(n => '<li class="none' + (n === me ? ' me' : '') + '"><span class="gm-rank"></span>' + A.ui.avatar(n, 28) + '<span class="gm-n">' + esc(n) + '</span><em>No score</em></li>').join('') +
         '</ol></section>';
-    }).join('') + '</div>';
+    }).join('') + santaBoard(me) + '</div>';
+  }
+  /* the Santa chase on the home screen keeps its own scores; they belong on this board too */
+  function santaBoard(me) {
+    const best = A.store.get('santaBest', {}) || {}, rows = A.names.map(n => ({ name: n, v: +best[n] || 0 })).filter(r => r.v > 0).sort((p, q) => q.v - p.v), rest = A.names.filter(n => !rows.some(r => r.name === n));
+    return '<section><h3>' + A.icon('sleigh', 18) + '<span>Santa Chase</span></h3><ol>' +
+      rows.map((r, i) => '<li class="' + (i ? '' : 'top') + (r.name === me ? ' me' : '') + '"><span class="gm-rank">' + (i ? i + 1 : A.icon('crown', 17)) + '</span>' + A.ui.avatar(r.name, 28) + '<span class="gm-n">' + esc(r.name) + '</span><b>' + r.v + '<i>presents</i></b></li>').join('') +
+      rest.map(n => '<li class="none' + (n === me ? ' me' : '') + '"><span class="gm-rank"></span>' + A.ui.avatar(n, 28) + '<span class="gm-n">' + esc(n) + '</span><em>No score</em></li>').join('') +
+      '</ol></section>';
   }
   let sheet = null;
   function openBoards() {
