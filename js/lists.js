@@ -80,6 +80,7 @@
     .fold summary>span{display:flex;flex-direction:column;gap:1px}
     .fold summary small{display:flex;align-items:center;gap:5px;font-weight:500;font-size:12.5px;color:var(--muted)}
     .fold summary small.set{color:#5fe3a1}
+    @media (max-width:520px){.phead{gap:8px}.phead>.avatar{display:none}.phead .ttl .h1{font-size:clamp(20px,6.4vw,28px)}}
     .wcard.is-got .wpic img,.wcard.is-got .wpic .ph{filter:grayscale(1);opacity:.45}
     .wcard.is-got .wtitle,.wcard.is-got .wprice,.wcard.is-got .wwhy{opacity:.5}
   `);
