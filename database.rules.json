@@ -1,0 +1,33 @@
+{
+  "rules": {
+    "groups": {
+      "$gid": {
+        ".read": "auth != null && data.child('members').child(auth.uid).exists()",
+        "meta": {
+          ".write": "auth != null && newData.exists() && (!data.exists() || root.child('groups').child($gid).child('members').child(auth.uid).exists())",
+          ".validate": "newData.child('name').isString() && newData.child('name').val().length <= 40"
+        },
+        "members": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid && root.child('groups').child($gid).child('meta').exists()",
+            ".validate": "newData.isNumber()"
+          }
+        },
+        "kv": {
+          ".write": "auth != null && root.child('groups').child($gid).child('members').child(auth.uid).exists()",
+          "$key": {
+            "$sub": {
+              ".validate": "newData.isString() && newData.val().length < 300000"
+            }
+          }
+        },
+        "photos": {
+          ".write": "auth != null && root.child('groups').child($gid).child('members').child(auth.uid).exists()",
+          "$id": {
+            ".validate": "newData.isString() && newData.val().length < 1500000"
+          }
+        }
+      }
+    }
+  }
+}
