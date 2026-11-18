@@ -76,7 +76,8 @@
     bike: '<circle cx="6" cy="16" r="3.500"/><circle cx="18" cy="16" r="3.500"/><path d="M6 16l3.500-7h6L18 16M9.500 9L12 16M8 6.500h2.500M15 6.500h2"/>',
     watch: '<rect x="7" y="7" width="10" height="10" rx="2.500"/><path d="M9 7l.7-3.500h4.600L15 7M9 17l.7 3.500h4.600L15 17M12 10v2.200l1.500 1"/>',
     spool: '<rect x="5" y="3.500" width="14" height="3.500" rx="1"/><rect x="5" y="17" width="14" height="3.500" rx="1"/><path d="M8 7v10M16 7v10M8 10.500l8-2M8 13.500l8-2M8 16.500l8-2"/>',
-    makeup: '<path d="M9 21v-8h6v8zM10 13V9.500l4-3V13"/>'
+    makeup: '<path d="M9 21v-8h6v8zM10 13V9.500l4-3V13"/>',
+    chip: '<rect x="2.500" y="7" width="19" height="8.500" rx="1.200"/><path d="M5.500 10h3v2.500h-3zM10.500 10h3v2.500h-3zM15.500 10h3v2.500h-3zM5 15.500V18M8 15.500V18M11 15.500V18M14 15.500V18M17 15.500V18M20 15.500V18"/>'
   };
   App.icons = I;
   App.icon = function (name, size, cls) {
@@ -84,5 +85,5 @@
     return '<svg class="ic ' + (cls || '') + '" width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>';
   };
   /* icons a wish can use when it has no photo */
-  App.wishIcons = ['gift', 'phone', 'game', 'headphones', 'shoe', 'shirt', 'book', 'toy', 'ball', 'art', 'bike', 'watch', 'music', 'camera', 'spool', 'makeup'];
+  App.wishIcons = ['gift', 'phone', 'game', 'headphones', 'shoe', 'shirt', 'book', 'toy', 'ball', 'art', 'bike', 'watch', 'music', 'camera', 'spool', 'chip', 'makeup'];
 })();

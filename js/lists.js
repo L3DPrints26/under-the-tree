@@ -176,7 +176,7 @@
         (it.why && it.why.length ? '<div class="d-sec"><h3>Why ' + (mine ? 'I' : esc(who)) + ' would love it</h3><ul class="why">' + it.why.map(w => '<li>' + A.icon('check') + '<span>' + esc(w) + '</span></li>').join('') + '</ul></div>' : '') +
         (it.note ? '<div class="d-sec"><h3>Good to know</h3><p class="d-note">' + esc(it.note) + '</p></div>' : '') +
         (it.links && it.links.length ? '<div class="d-sec"><h3>Where to get it</h3><div class="links">' + it.links.map(u => '<a class="btn block" href="' + esc(u) + '" target="_blank" rel="noopener">' + A.icon('link', 18) + 'Open ' + esc(host(u)) + '</a>').join('') + '</div></div>' : '') +
-        (b && b.name ? '<div class="d-sec"><h3>Backup option</h3><div class="backup"><div class="row gap">' + (bsrc ? '<img src="' + esc(bsrc) + '" alt="" style="width:64px;height:64px;border-radius:10px;object-fit:cover">' : '') + '<div class="grow"><b>' + esc(b.name) + '</b>' + (b.price ? '<span class="wprice">' + esc(b.price) + '</span>' : '') + '</div></div>' +
+        (b && b.name ? '<div class="d-sec"><h3>Backup, if the first choice does not work out</h3><div class="backup"><div class="row gap">' + (bsrc ? '<img src="' + esc(bsrc) + '" alt="" style="width:64px;height:64px;border-radius:10px;object-fit:cover">' : '') + '<div class="grow"><b>' + esc(b.name) + '</b>' + (b.price ? '<span class="wprice">' + esc(b.price) + '</span>' : '') + '</div></div>' +
           (b.note ? '<p class="d-note small" style="margin-top:8px">' + esc(b.note) + '</p>' : '') + (b.link ? '<a class="btn sm block" style="margin-top:10px" href="' + esc(b.link) + '" target="_blank" rel="noopener">' + A.icon('link', 16) + 'Open ' + esc(host(b.link)) + '</a>' : '') + '</div></div>' : '') +
         '<div class="sticky-acts">' + act + '</div>',
       onMount(el, close) {
@@ -202,7 +202,7 @@
         '<label class="field"><span>Anything else they should know? Size, color, which version.</span><textarea class="input" id="fNote" maxlength="600" style="min-height:70px">' + esc(it.note) + '</textarea></label>' +
         '<label class="switch"><span class="s-text"><b>Most wanted</b><small>Your number one. Only one wish can have this.</small></span><input type="checkbox" id="fTop"' + (it.top ? ' checked' : '') + '></label>' +
         '<label class="switch"><span class="s-text"><b>Ask Santa for this one</b><small>The gift you want from Santa. Only one wish can have this.</small></span><input type="checkbox" id="fSanta"' + (it.santa ? ' checked' : '') + '></label>' +
-        '<details class="fold"' + (b.name ? ' open' : '') + '><summary>Backup option' + A.icon('next', 18) + '</summary>' +
+        '<details class="fold"' + (b.name ? ' open' : '') + '><summary><span>Backup option<small id="bState"></small></span>' + A.icon('next', 18) + '</summary>' +
           '<p class="muted small" style="margin-bottom:12px">Something that would also be great if the first choice does not work out.</p>' +
           '<label class="field"><span>Backup</span><input class="input" id="bName" maxlength="90" value="' + esc(b.name || '') + '" placeholder="A different color or model"></label>' +
           '<label class="field"><span>Price</span><input class="input" id="bPrice" maxlength="40" value="' + esc(b.price || '') + '"></label>' +
@@ -212,6 +212,10 @@
         '<div class="sticky-acts">' + (editing ? '<button class="btn danger" id="fDel" style="flex:0 0 auto" aria-label="Remove this wish">' + A.icon('trash', 18) + '</button>' : '') + '<button class="btn primary" id="fSave">' + (editing ? 'Save' : 'Add to my list') + '</button></div>',
       onMount(el, close) {
         const drop = $('#drop', el), file = $('#fFile', el), linksEl = $('#fLinks', el);
+        /* say plainly whether a backup is set, and keep it true while they type */
+        const bState = $('#bState', el), bIn = $('#bName', el);
+        const drawBackup = () => { const n = bIn.value.trim(); bState.className = n ? 'set' : ''; bState.innerHTML = n ? A.icon('check', 13) + 'Set: ' + esc(n) : 'Not set. Tap to add one.'; };
+        bIn.addEventListener('input', drawBackup); drawBackup();
         const drawPhotos = () => {
           drop.innerHTML = photos.map((p, i) => '<div class="thumb"><img src="' + esc(A.photos.src(p)) + '" alt=""><button type="button" data-rm="' + i + '" aria-label="Take this photo off">' + A.icon('x') + '</button></div>').join('') +
             '<button type="button" class="addphoto" id="pick">' + A.icon('camera', 22) + 'Add photo</button>' + (photos.length ? '' : '<span class="drop-hint">Pick from your photos, take one, or drag a picture here.</span>');
