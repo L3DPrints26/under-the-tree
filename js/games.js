@@ -1159,10 +1159,11 @@
 
     /* ----- the one move: drop the sliding present ----- */
     /* The present drops from where it was on screen at the moment of the tap, not from where the game
-       has moved it since. A drawn frame reaches the screen about two refreshes later, and the tap itself
-       carries the time it happened, so look that moment up in the frames just drawn. */
+       has moved it since. A frame takes one frame time to draw and reaches the screen about half a
+       refresh after that, and the tap itself carries the time it happened, so look that moment up in
+       the frames just drawn. */
     function shownX(ev) {
-      const now = performance.now(), ts = ev && ev.timeStamp, lag = Math.min(120, frameMs * 2);
+      const now = performance.now(), ts = ev && ev.timeStamp, lag = Math.min(120, frameMs + Math.min(frameMs, 17) / 2);
       const at = (ts > 0 && now - ts >= 0 && now - ts < 300 ? ts : now) - lag;
       let x = seen.length ? seen[1] : S.mv.x;
       for (let i = seen.length - 2; i >= 0; i -= 2) if (seen[i] <= at) { x = seen[i + 1]; break; }
@@ -1173,8 +1174,8 @@
       if (S.mode !== 'play' || !S.mv) return;
       if (lay) clearLayer();
       const m = S.mv, mx = shownX(ev), n = S.blocks.length, top = S.blocks[n - 1], dx = mx - top.x, y = floor + S.cam - n * bh, rib = ribbon(mx, m.w);
-      if (Math.abs(dx) <= Math.max(.012, top.w * .07)) {
-        /* close enough counts as perfect: nothing is cut, and a run of three wins some width back */
+      if (Math.abs(dx) <= Math.max(.01, top.w * .05)) {
+        /* a hair off still counts as perfect: nothing is cut, and a run of three wins some width back */
         let w = top.w, x = top.x;
         S.streak++;
         if (S.streak >= 3 && w < FULL) { const grow = Math.min(.03, FULL - w); w += grow; x = clamp(x - grow / 2, 0, 1 - w); }
