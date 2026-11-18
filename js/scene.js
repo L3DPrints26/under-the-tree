@@ -29,7 +29,7 @@
     #scene .photo{position:absolute;inset:0;background-size:cover;background-position:center 55%;opacity:0;transition:opacity .35s ease}
     #scene .photo.on{transition:opacity 1.1s ease}
     #scene .photo.on{opacity:1}
-    #scene .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(4,9,22,.58) 0%,rgba(4,9,22,.2) 34%,rgba(4,9,22,.28) 66%,rgba(4,9,22,.74) 100%)}
+    #scene .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(4,9,22,.68) 0%,rgba(4,9,22,.36) 34%,rgba(4,9,22,.42) 66%,rgba(4,9,22,.8) 100%)}
     #santaShield{position:fixed;inset:0;z-index:19;display:none;touch-action:none;background:rgba(4,9,22,.45)}
     #santaShield.on{display:block}
     #chase{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 60px);transform:translate(-50%,-14px);z-index:85;display:flex;align-items:center;gap:10px;height:44px;padding:0 6px 0 14px;border-radius:999px;

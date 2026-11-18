@@ -2,7 +2,10 @@
 (function () {
   'use strict';
   var A = window.App;
-  document.getElementById('wordmark').innerHTML = A.icon('tree', 22) + '<span>Under the Tree</span>';
+  var wm = document.getElementById('wordmark');
+  wm.innerHTML = A.icon('tree', 22) + '<span>Under the Tree</span>' + A.icon('next', 16, 'wm-more');
+  wm.setAttribute('aria-label', 'Menu'); wm.setAttribute('role', 'button');
+  wm.onclick = function (e) { e.preventDefault(); if (A.ui.menu) A.ui.menu(); };
   A.renderShell();
   document.getElementById('meBtn').onclick = function () { A.ui.who(false); };
   if (!A.pages.home) A.pages.home = { render: function (root) { root.innerHTML = '<div class="empty"><p>Home is still loading.</p></div>'; } };

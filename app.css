@@ -4,7 +4,7 @@
 :root{
   --bg:#060d1f; --surface:#0f1b33; --surface2:#172848; --surface3:#1f3359;
   --line:rgba(255,255,255,.10); --line2:rgba(255,255,255,.2);
-  --text:#f5f0e4; --muted:#9db0ca; --dim:#6f84a3;
+  --text:#f5f0e4; --muted:#bccadf; --dim:#93a6c2;
   --gold:#e9c46a; --gold2:#c99a2e; --gold-ink:#2a1f05;
   --red:#d7263d; --red2:#a3162a; --green:#1f9d6b; --green2:#147150; --blue:#3b82f6;
   --r:18px; --r-sm:12px; --r-xs:8px;
@@ -48,7 +48,7 @@ svg.ic{flex:none;display:block}
 .land{position:absolute;left:-3%;top:-2%;width:106%;height:104%;will-change:transform}
 #back{position:fixed;inset:0;z-index:1;pointer-events:none}
 #scrim{position:fixed;inset:0;z-index:2;background:#040a18;opacity:0;transition:opacity .4s;pointer-events:none}
-body:not([data-page="home"]) #scrim{opacity:.72}
+body:not([data-page="home"]) #scrim{opacity:.8}
 #santa{position:fixed;left:0;top:0;z-index:20;width:clamp(190px,26vw,420px);display:none;cursor:pointer;will-change:transform}
 #santa svg{display:block;width:100%;height:auto;overflow:visible}
 .bob{animation:bob .46s ease-in-out infinite alternate}

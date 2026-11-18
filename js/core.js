@@ -227,6 +227,24 @@ window.App = (function () {
     .who-btn>span:last-child{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .who-plus{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;border:1.5px dashed var(--line2);color:var(--muted)}
     .who-row{margin-top:12px}
+    .mn-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .mn-tile{display:flex;align-items:center;gap:10px;min-height:56px;padding:8px 10px;border-radius:14px;background:var(--surface2);border:1px solid var(--line);text-align:left;min-width:0}
+    .mn-tile:active{transform:scale(.98)}
+    .mn-ic{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:rgba(233,196,106,.14);color:var(--gold);flex:none}
+    .mn-tx{display:flex;flex-direction:column;min-width:0}
+    .mn-tx b{font-weight:600;font-size:14px;line-height:1.2}
+    .mn-tx small{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .wordmark{cursor:pointer}
+    .wordmark .wm-more{transform:rotate(90deg);color:#c9d5e6;margin-left:-2px}
+    @media (orientation:landscape) and (max-height:480px){.mn-grid{grid-template-columns:repeat(5,1fr)}.mn-tile{flex-direction:column;align-items:flex-start;gap:6px;min-height:0;padding:8px}.mn-ic{width:30px;height:30px}.mn-tx b{font-size:13px}}
+    /* easier to read: small text a little bigger, and a soft dark edge on words that sit on the photo */
+    .olabel{font-size:clamp(12px,2.1cqh,13.5px)}
+    .count-unit,.count-sub{text-shadow:0 1px 3px rgba(4,9,22,.9),0 0 10px rgba(4,9,22,.6)}
+    .count-sub{font-size:clamp(13px,2.4cqh,15.5px);color:#dbe5f2}
+    .tab{font-size:12px}
+    .wwhy{font-size:14px}
+    .phead .ttl p{font-size:13.5px;color:#cfdaea}
+    .phead .ttl,.page>header,.page h1{text-shadow:0 1px 3px rgba(4,9,22,.75)}
     .who-switch{margin-top:8px}
     .who-row .btn{padding:0 10px}
     .bg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
@@ -310,7 +328,7 @@ window.App = (function () {
     ui.sheet({
       title: 'Settings', cls: 'set',
       html: '<label class="switch"><span class="s-text"><b>School mode</b><small>Shows Dad and Mom instead of Daddy and Mommy. Only on this device.</small></span><input type="checkbox" id="setSchool"' + (school ? ' checked' : '') + '></label>' +
-        (App.lock && App.lock.on() && ME ? '<div class="row gap" style="margin:4px 0 6px"><button class="btn sm grow" id="setPin">' + App.icon('lock', 16) + 'Change my PIN</button><button class="btn sm grow" id="setFace" hidden></button></div>' : '') +
+        (App.lock && App.lock.on() && ME ? '<div class="row gap" style="margin:4px 0 6px"><button class="btn sm grow" id="setPin">' + App.icon('lock', 16) + (App.lock.hasPin(ME) ? 'Change my PIN' : 'Add a PIN') + '</button><button class="btn sm grow" id="setFace" hidden></button></div>' : '') +
         (bgs.length ? '<span class="label" style="margin-top:10px">Background</span><div class="bg-grid">' + bgs.map(b => '<button class="bg-opt' + (b.id === cur ? ' on' : '') + '" data-bg="' + b.id + '" style="background-image:url(' + b.thumb + ')"><span>' + App.esc(b.name) + '</span></button>').join('') + '</div>' : ''),
       onMount(el) {
         $('#setSchool', el).onchange = e => App.school.set(e.target.checked);
@@ -318,6 +336,28 @@ window.App = (function () {
         if (pb) pb.onclick = () => App.lock.changePin();
         if (fb) { const lab = () => { fb.innerHTML = App.icon('eye', 16) + (App.lock.faceOn(ME) ? 'Face ID is on' : 'Use Face ID here'); }; App.lock.faceReady().then(ok => { if (!ok) return; fb.hidden = false; lab(); fb.onclick = () => App.lock.faceToggle().then(on => { lab(); ui.toast(on ? 'Done. This phone can sign you in.' : 'Face ID is off on this phone.'); }, () => ui.toast('That did not turn on.')); }); }
         $$('.bg-opt', el).forEach(b => b.onclick = () => { App.scene.setBackground(b.dataset.bg); $$('.bg-opt', el).forEach(x => x.classList.toggle('on', x === b)); });
+      }
+    });
+  };
+
+  /* ---------- menu ----------
+     One place for everything that is not a wishlist: groups, invites, people, background, school mode, PIN. */
+  ui.menu = () => {
+    const C = App.cloud, inGroup = !!App.space() && !!C, g = inGroup ? (C.groups().find(x => x.id === App.space()) || {}) : {};
+    const tile = (id, icon, label, sub) => '<button class="mn-tile" id="' + id + '"><span class="mn-ic">' + App.icon(icon, 22) + '</span><span class="mn-tx"><b>' + label + '</b>' + (sub ? '<small>' + sub + '</small>' : '') + '</span></button>';
+    ui.sheet({
+      title: inGroup ? (g.name || 'Menu') : 'Menu', cls: 'menu',
+      html: '<div class="mn-grid">' +
+        (inGroup ? tile('mnInvite', 'link', 'Invite people', 'Code ' + C.pretty(App.space())) + tile('mnPeople', 'users', 'People', App.names.length + ' in this group') + tile('mnGroups', 'swap', 'My groups', 'Switch or leave') : '') +
+        (C ? tile('mnFamily', 'tree', 'Start a family group') + tile('mnFriends', 'heart', 'Start a friend group') + tile('mnJoin', 'plus', 'Join with a code') + tile('mnMore', 'more', 'More kinds of groups') : '') +
+        tile('mnBg', 'photo', 'Background', 'Pick a photo') + tile('mnSchool', 'book', 'School mode', school ? 'On' : 'Off') +
+        (App.lock && App.lock.on() && ME ? tile('mnPin', 'lock', 'PIN and Face ID', App.lock.hasPin(ME) ? 'PIN is set' : 'No PIN yet') : '') + '</div>',
+      onMount(el, close) {
+        const on = (id, fn) => { const b = $('#' + id, el); if (b) b.onclick = fn; };
+        on('mnInvite', () => C.invite()); on('mnPeople', () => { close(); C.peopleSheet(); }); on('mnGroups', () => { close(); C.groupSheet(); });
+        on('mnFamily', () => C.createSheet('family')); on('mnFriends', () => C.createSheet('friends')); on('mnJoin', () => C.joinSheet()); on('mnMore', () => C.moreKindsSheet());
+        on('mnBg', () => { close(); ui.settings(); }); on('mnPin', () => { close(); ui.settings(); });
+        on('mnSchool', () => { const want = !school; close(); App.school.set(want); if (want) ui.toast('School mode is on.'); });
       }
     });
   };
@@ -343,7 +383,7 @@ window.App = (function () {
           '<div class="row gap who-row">' + (App.cloud ? '<button class="btn grow" id="whoGroups">' + App.icon('users', 18) + (App.space() ? 'Group' : 'Go online') + '</button>' : '') +
           '<button class="btn grow" id="whoSet">' + App.icon('sliders', 18) + 'Settings</button></div>' +
           '<button class="btn ghost block who-switch" id="whoSwitch">Switch person</button>'
-        : '<p class="muted">' + (!App.names.length ? 'Nobody is in this group yet. Add your name to start.' : locks ? 'Pick your name. A name with a lock already belongs to someone and needs their PIN.' : 'Pick your name. You can change your own list and see everyone else\'s.') + '</p>' +
+        : '<p class="muted">' + (!App.names.length ? 'Nobody is in this group yet. Add your name to start.' : locks ? 'Pick your name. A name with a lock is already taken.' : 'Pick your name. You can change your own list and see everyone else\'s.') + '</p>' +
           '<div class="who-grid' + (App.names.length > 5 ? ' many' : '') + '">' +
           App.names.map(n => '<button class="who-btn' + (n === ME ? ' on' : '') + '" data-n="' + App.esc(n) + '">' + (locks && App.lock.has(n) ? '<i class="who-lock">' + App.icon('lock', 14) + '</i>' : '') + ui.avatar(n, 64) + '<span>' + App.esc(n) + '</span></button>').join('') +
           (App.cloud && App.names.length < App.maxPeople ? '<button class="who-btn who-add" id="whoAdd"><span class="who-plus">' + App.icon('plus', 26) + '</span><span>' + (App.names.length ? 'Add a name' : 'Add my name') + '</span></button>' : '') + '</div>',

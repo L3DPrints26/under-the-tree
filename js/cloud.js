@@ -34,6 +34,8 @@
     .gp-btns .btn{flex:1 1 140px}
     .gp-msg{min-height:20px;margin-top:10px;font-size:13.5px;color:#ff8a98}
     .gp-big{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+    .gp-kinds{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .gp-kinds .btn{justify-content:flex-start;padding:0 12px}
     .gp-card .gp-code{display:block}
     .gp-card .gp-state{margin-top:4px}
     .gp-tap{display:block;width:100%;text-align:left;cursor:pointer}
@@ -232,11 +234,11 @@
     });
     raw.set(pre + 'dirty', d); raw.set(pre + 'pup', Array.from(pics));
   }
-  async function create(name, bring, id) {
+  async function create(name, bring, id, kind) {
     await within(start(), 15000);
     id = cleanCode(id) || newCode();
     const g = db.ref('groups/' + id);
-    await within(g.child('meta').set({ name, at: Date.now() }), 12000);
+    await within(g.child('meta').set({ name, at: Date.now(), kind: kind || 'group' }), 12000);
     await within(g.child('members/' + user.uid).set(Date.now()), 12000);
     register(id, name);
     if (bring) carryOver(id);
@@ -269,28 +271,44 @@
   const why = e => (e && e.message === 'nocode' ? 'That code did not work. Check it and try again.' : 'No connection right now. Check the Wi-Fi and try again.');
 
   /* ---------- screens ---------- */
+  /* kinds of groups: what the button says, the name it starts with, its icon */
+  const KINDS = {
+    family: ['family group', 'Our family', 'tree'], friends: ['friend group', 'Friend group', 'heart'], class: ['class group', 'Our class', 'book'], team: ['team group', 'Our team', 'ball'],
+    work: ['work group', 'Work crew', 'mug'], church: ['church group', 'Church group', 'candle'], roommates: ['roommate group', 'Roommates', 'stocking'], couple: ['group for two', 'Us two', 'gift']
+  };
   function welcome() {
     A.ui.sheet({
       title: 'Under the Tree', locked: true,
       html: '<p class="muted">Christmas wishlists for your family or your friends. Everyone adds what they want, and everyone can see it from their own phone.</p>' +
-        '<div class="gp-big"><button class="btn primary block" id="wNew">' + A.icon('plus', 18) + 'Start a group</button>' +
-        '<button class="btn block" id="wJoin">' + A.icon('users', 18) + 'Join with a code</button></div>',
-      onMount(el) { $('#wNew', el).onclick = () => createSheet(); $('#wJoin', el).onclick = () => joinSheet(); }
+        '<div class="gp-big"><button class="btn primary block" id="wFam">' + A.icon('tree', 18) + 'Start a family group</button>' +
+        '<button class="btn block" id="wFri">' + A.icon('heart', 18) + 'Start a friend group</button>' +
+        '<button class="btn block" id="wJoin">' + A.icon('users', 18) + 'Join with a code</button>' +
+        '<button class="btn ghost block" id="wMore">More kinds of groups</button></div>',
+      onMount(el) { $('#wFam', el).onclick = () => createSheet('family'); $('#wFri', el).onclick = () => createSheet('friends'); $('#wJoin', el).onclick = () => joinSheet(); $('#wMore', el).onclick = () => moreKindsSheet(); }
     });
   }
-  function createSheet() {
-    const bring = !A.space() && hasLocalLists();
+  function moreKindsSheet() {
     A.ui.sheet({
-      title: 'Start a group',
-      html: '<label class="field"><span>What should it be called?</span><input class="input" id="gName" maxlength="40" placeholder="Our family" autocomplete="off"></label>' +
+      title: 'More kinds of groups',
+      html: '<div class="gp-kinds">' + ['class', 'team', 'work', 'church', 'roommates', 'couple'].map(k => '<button class="btn" data-kind="' + k + '">' + A.icon(KINDS[k][2], 18) + KINDS[k][1] + '</button>').join('') +
+        '<button class="btn" data-kind="">' + A.icon('plus', 18) + 'Something else</button></div>',
+      onMount(el, close) { $$('[data-kind]', el).forEach(b => { b.onclick = () => { close(); createSheet(b.dataset.kind); }; }); }
+    });
+  }
+  function createSheet(kind) {
+    const bring = !A.space() && hasLocalLists(), k = KINDS[kind] || ['group', '', 'plus'];
+    A.ui.sheet({
+      title: 'Start a ' + k[0],
+      html: '<label class="field"><span>What should it be called?</span><input class="input" id="gName" maxlength="40" placeholder="' + esc(k[1] || 'Our group') + '" value="' + esc(k[1]) + '" autocomplete="off"></label>' +
+        '<p class="muted" style="font-size:13px;margin:-4px 0 10px">You get a code to send to the people you want in it.</p>' +
         (bring ? '<label class="switch"><span class="s-text"><b>Bring over the lists on this device</b><small>Everything already saved here moves into the group.</small></span><input type="checkbox" id="gBring" checked></label>' : '') +
         '<p class="gp-msg" id="gMsg"></p><button class="btn primary block" id="gGo">Start the group</button>',
       onMount(el) {
         const btn = $('#gGo', el), inp = $('#gName', el);
         btn.onclick = () => {
-          const name = inp.value.trim() || 'Our family';
+          const name = inp.value.trim() || k[1] || 'Our group';
           btn.disabled = true; btn.textContent = 'Starting…'; $('#gMsg', el).textContent = '';
-          create(name, bring && $('#gBring', el).checked).then(go, e => { btn.disabled = false; btn.textContent = 'Start the group'; $('#gMsg', el).textContent = why(e); });
+          create(name, bring && $('#gBring', el).checked, '', kind || 'group').then(go, e => { btn.disabled = false; btn.textContent = 'Start the group'; $('#gMsg', el).textContent = why(e); });
         };
       }
     });
@@ -356,13 +374,16 @@
       title: 'People',
       html: '<div class="gp-people">' + A.names.map(n => '<div class="gp-person">' + A.ui.avatar(n, 30) + '<b>' + esc(n) + '</b>' +
         (n === org ? '<small>' + (n === me ? 'You run this' : 'Runs this') + '</small>' : n === me ? '<small>You</small>' : '') +
-        (boss && n !== me ? (A.lock && A.lock.has(n) ? '<button class="icon-btn" data-pin="' + esc(n) + '" aria-label="Reset the PIN for ' + esc(n) + '">' + A.icon('lock', 16) + '</button>' : '') +
+        (boss && n !== me ? (A.lock && A.lock.has(n) ? '<button class="icon-btn" data-pin="' + esc(n) + '" aria-label="Unlock ' + esc(n) + '">' + A.icon('lock', 16) + '</button>' : '') +
           '<button class="icon-btn" data-rm="' + esc(n) + '" aria-label="Remove ' + esc(n) + '">' + A.icon('x', 16) + '</button>' : '') + '</div>').join('') + '</div>' +
-        (org && !boss ? '<p class="muted" style="font-size:13px;margin-top:10px">' + esc(org) + ' runs this group and can reset a PIN or take someone off.</p>' : '') +
+        (org && !boss ? '<p class="muted" style="font-size:13px;margin-top:10px">' + esc(org) + ' runs this group and can unlock a name or take someone off.</p>' : '') +
+        (org && me === org && A.names.length > 1 ? '<button class="btn sm ghost block" id="gpHand" style="margin-top:10px">Let someone else run this group</button>' : '') +
         (A.names.length < A.maxPeople ? '<button class="btn block" id="gpAdd" style="margin-top:12px">' + A.icon('plus', 16) + 'Add a person</button>' : ''),
       onMount(el, close) {
         const add = $('#gpAdd', el); if (add) add.onclick = () => addPersonSheet(() => { close(); peopleSheet(); });
-        $$('[data-pin]', el).forEach(b => { b.onclick = () => A.ui.confirm('Reset the PIN for ' + b.dataset.pin + '? They make a new one the next time they open the app.', 'Reset PIN', true).then(yes => { if (yes) { A.lock.reset(b.dataset.pin); close(); peopleSheet(); A.ui.toast('PIN reset.'); } }); });
+        $$('[data-pin]', el).forEach(b => { b.onclick = () => A.ui.confirm('Unlock ' + b.dataset.pin + '? Use this when the wrong person picked the name. Whoever picks it next gets it, and its PIN is cleared.', 'Unlock', true).then(yes => { if (yes) { A.lock.reset(b.dataset.pin); close(); peopleSheet(); A.ui.toast('Unlocked.'); } }); });
+        const ho = $('#gpHand', el); if (ho) ho.onclick = () => A.ui.sheet({ title: 'Who should run this group?', html: '<p class="muted">They will be the one who can unlock names and take people off.</p><div class="gp-kinds" style="margin-top:12px">' + A.names.filter(n => n !== me).map(n => '<button class="btn" data-ho="' + esc(n) + '">' + A.ui.avatar(n, 26) + esc(n) + '</button>').join('') + '</div>',
+          onMount(s2, c2) { $$('[data-ho]', s2).forEach(x => { x.onclick = () => { A.lock.handOver(x.dataset.ho); c2(); close(); A.ui.toast(x.dataset.ho + ' runs this group now.'); }; }); } });
         $$('[data-rm]', el).forEach(b => { b.onclick = () => A.ui.confirm('Take ' + b.dataset.rm + ' off this group? Their wishes are kept and come back if you add the same name again.', 'Remove', true).then(yes => { if (yes) { A.removePerson(b.dataset.rm); close(); peopleSheet(); A.softRefresh(); } }); });
       },
       onClose() { A.softRefresh(); }
@@ -411,7 +432,7 @@
     });
   }
 
-  A.cloud = { status, synced: () => gotFirst, create, join, leave, welcome, createSheet, joinSheet, groupSheet, peopleSheet, addPersonSheet, groups, pretty, inviteLink };
+  A.cloud = { status, synced: () => gotFirst, create, join, leave, welcome, createSheet, moreKindsSheet, joinSheet, groupSheet, peopleSheet, addPersonSheet, invite: () => { const g = groups().find(x => x.id === A.space()); if (g) invite(g.id, g.name); }, groups, pretty, inviteLink };
 
   /* opened from an invite link */
   A.cloud.pendingJoin = (() => { const m = /^#\/join\/([A-Za-z0-9-]+)/.exec(location.hash); if (!m) return ''; try { history.replaceState(null, '', location.pathname + location.search + '#/'); } catch (e) {} return cleanCode(m[1]); })();
