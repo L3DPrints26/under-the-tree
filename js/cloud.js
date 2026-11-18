@@ -209,6 +209,8 @@
     Object.keys(localStorage).forEach(full => {
       if (full.indexOf('utt:') !== 0) return;
       const k = full.slice(4); if (k.indexOf('g:') === 0 || k === 'groups' || k === 'group' || k === 'music' || k === 'seeded') return;
+      /* joining brings the wishlists and pictures only. Votes, scores and the rest stay as the group has them */
+      if (joining && !NOSYNC[k] && k !== 'lists' && k !== 'pics' && k !== 'history') return;
       const v = raw.get(k); raw.set(pre + k, v);
       if (NOSYNC[k]) return;
       const f = flat(k, v), subs = Object.keys(f).filter(s => keep(k, s, f));
