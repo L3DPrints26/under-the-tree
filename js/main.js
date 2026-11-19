@@ -3,7 +3,8 @@
   'use strict';
   var A = window.App;
   var wm = document.getElementById('wordmark');
-  wm.innerHTML = A.icon('tree', 22) + '<span>Under the Tree</span>' + A.icon('next', 16, 'wm-more');
+  var grp = A.cloud && A.space() ? (A.cloud.groups().filter(function (x) { return x.id === A.space(); })[0] || {}).name : '';
+  wm.innerHTML = A.icon('tree', 22) + (grp ? '<span class="wm-t"><small>Under the Tree</small><b>' + A.esc(grp) + '</b></span>' : '<span>Under the Tree</span>') + A.icon('next', 16, 'wm-more');
   wm.setAttribute('aria-label', 'Menu'); wm.setAttribute('role', 'button');
   wm.onclick = function (e) { e.preventDefault(); if (A.ui.menu) A.ui.menu(); };
   A.renderShell();

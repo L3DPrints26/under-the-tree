@@ -273,6 +273,30 @@ window.App = (function () {
     .who-orn-b{width:38px;height:38px;border-radius:50%;flex:none;background:radial-gradient(circle at 30% 26%,rgba(255,255,255,.95) 0,rgba(255,255,255,.4) 7%,rgba(255,255,255,0) 22%),repeating-linear-gradient(135deg,rgba(255,255,255,.3) 0 7%,rgba(255,255,255,0) 7% 19%),radial-gradient(circle at 38% 32%,#ffe08a,#d49a1c 58%,#6b4a06);box-shadow:inset -3px -4px 8px rgba(0,0,0,.35)}
     .who-orn b{display:block;font-weight:600;font-size:15.5px;color:#fff}
     .who-orn small{display:block;font-size:13px;color:#ffd6dc}
+    /* top bar: the group's name, with the app name small above it */
+    .wm-t{display:flex;flex-direction:column;line-height:1.08;min-width:0}
+    .wm-t small{font-family:var(--font);font-size:11px;font-weight:600;color:#c9d5e6;letter-spacing:.03em}
+    .wm-t b{font-family:var(--display);font-weight:600;font-size:19px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:44vw}
+    /* tab bar: pine green, snow along the top edge, and the tab you are on is a red ornament */
+    #tabs{position:relative;background:#0c2a22;border-top:0}
+    #tabs::before{content:"";position:absolute;left:0;right:0;top:-8px;height:9px;pointer-events:none;background:radial-gradient(circle at 50% 100%,#eef4fb 0 8.5px,rgba(238,244,251,0) 9px) 0 0/19px 9px repeat-x}
+    .tab{color:#c4d9cf}
+    .tab svg{box-sizing:content-box;padding:6px;border-radius:50%;margin:-4px 0 -3px}
+    .tab.on{color:#fff}
+    .tab.on::before{display:none}
+    .tab.on svg{color:#ffe9a8;background:radial-gradient(circle at 32% 26%,rgba(255,255,255,.85) 0,rgba(255,255,255,.25) 12%,rgba(255,255,255,0) 30%),radial-gradient(circle at 40% 34%,#ff6b7d,#c41e3a 60%,#6e0d1e);box-shadow:0 3px 8px rgba(0,0,0,.45)}
+    @media (orientation:landscape) and (min-width:560px){#tabs{border-right:0}#tabs::before{left:auto;right:-5px;top:0;bottom:0;width:5px;height:auto;background:repeating-linear-gradient(180deg,#c9243a 0 9px,#f4ecdc 9px 18px)}}
+    /* music player: a red music box with gold trim and a candy-stripe progress line */
+    #player{background:linear-gradient(#8a1a2c,#6d1422);border:1px solid rgba(233,196,106,.55)}
+    .p-art{border-radius:50%;color:#6b4a06;background:radial-gradient(circle at 32% 26%,rgba(255,255,255,.9) 0,rgba(255,255,255,.3) 12%,rgba(255,255,255,0) 30%),radial-gradient(circle at 40% 34%,#ffe9a8,#d9a520 62%,#7a5708)}
+    #player.playing .p-art svg{animation:p-spin 6s linear infinite}
+    @keyframes p-spin{to{transform:rotate(360deg)}}
+    .p-sub{color:#ffd6dc;font-size:12.5px}
+    .p-btn.main{background:#fff;color:#8a1a2c}
+    .p-bar{height:4px;background:rgba(0,0,0,.28)}
+    .p-bar b{background:repeating-linear-gradient(135deg,#fff 0 6px,#ffd76a 6px 12px)}
+    #player.loading .p-btn.main{animation:p-load 1s ease-in-out infinite alternate}
+    @keyframes p-load{from{opacity:.45}to{opacity:1}}
     .who-row{margin-top:12px}
     .mu{display:flex;flex-direction:column;gap:14px}
     .mu-a,.mu-b{display:flex;flex-direction:column;gap:10px;min-width:0}
