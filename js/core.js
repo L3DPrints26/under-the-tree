@@ -83,11 +83,13 @@ window.App = (function () {
       if (l && Object.keys(l).length) { obj = {}; Object.keys(l).forEach((n, i) => { obj[n] = { c: i % PALETTE.length, at: i + 1 }; }); App.store.set('people', obj); }
     }
     obj = obj || {};
-    const arr = Object.keys(obj).filter(n => obj[n] && App.cleanName(n) === n).map(n => ({ name: n, c: PALETTE[(obj[n].c | 0) % PALETTE.length], at: +obj[n].at || 0 }))
+    const arr = Object.keys(obj).filter(n => obj[n] && App.safeName(n)).map(n => ({ name: n, c: PALETTE[(obj[n].c | 0) % PALETTE.length], at: +obj[n].at || 0 }))
       .sort((a, b) => a.at - b.at || (a.name < b.name ? -1 : 1));
     App.people.length = 0; App.names.length = 0;
     arr.forEach(p => { App.people.push(p); App.names.push(p.name); });
   };
+  /* a name that came down from the group is shown only if it could not be mistaken for code */
+  App.safeName = n => typeof n === 'string' && n.length > 0 && n.length <= 40 && !/[<>"'&`\\\x00-\x1f]/.test(n);
   App.cleanName = s => String(s || '').replace(/[^\p{L}\p{N} \-]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 14).trim();
   App.addPerson = name => {
     name = App.cleanName(name); if (!name || name in {}) return '';
