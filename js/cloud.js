@@ -76,7 +76,8 @@
   const newCode = () => { const b = new Uint8Array(10); crypto.getRandomValues(b); return Array.from(b, x => LETTERS[x % 32]).join(''); };
   const register = (id, name) => { const g = groups().filter(x => x.id !== id); g.push({ id, name }); saveGroups(g); };
   const hasLocalLists = () => { const l = raw.get('lists', null); return !!(l && Object.keys(l).length); };
-  const inviteLink = id => (/^https?:$/.test(location.protocol) ? location.origin + location.pathname + '#/join/' + id : '');
+  /* inside the iPhone app there is no web address, so invites point at the public page */
+  const inviteLink = id => (/^https?:$/.test(location.protocol) ? location.origin + location.pathname + '#/join/' + id : location.protocol === 'capacitor:' ? 'https://l3dprints26.github.io/under-the-tree/#/join/' + id : '');
 
   /* ---------- connect ---------- */
   let fb = null, db = null, user = null, connected = false, starting = null;

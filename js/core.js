@@ -95,7 +95,7 @@ window.App = (function () {
   /* ---------- who is using this (remembered per space, on this device only) ---------- */
   let ME = App.store.get('me', null);
   /* ?me=Name is a test hook and only works on this computer, never on the real site */
-  const DEV = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+  const DEV = /^https?:$/.test(location.protocol) && /^(localhost|127\.0\.0\.1)$/.test(location.hostname);     /* never inside the iPhone app, which also calls itself localhost */
   if (DEV && App.names.indexOf(App.qs.get('me')) >= 0) ME = App.qs.get('me');
   if (App.names.indexOf(ME) < 0) ME = null;
   App.me = () => ME;

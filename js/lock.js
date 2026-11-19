@@ -9,7 +9,7 @@
 (function () {
   'use strict';
   const A = window.App, $ = A.$, $$ = A.$$, esc = A.esc, raw = A.store.raw;
-  const LOCAL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+  const LOCAL = /^https?:$/.test(location.protocol) && /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
   const OFF = LOCAL && A.qs.has('nolock');                      /* test hook, this computer only */
   A.css(`
     .pin-in{text-align:center;letter-spacing:.42em;font-size:22px;font-weight:600}
