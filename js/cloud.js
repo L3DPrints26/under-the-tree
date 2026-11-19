@@ -14,7 +14,7 @@
   };
   const SDK = 'https://www.gstatic.com/firebasejs/10.14.1/firebase-';
   /* kept on this device only */
-  const NOSYNC = { me: 1, adventJokes: 1, claims: 1, dirty: 1, pup: 1, music: 1, groups: 1, group: 1, seeded: 1 };
+  const NOSYNC = { me: 1, adventJokes: 1, claims: 1, dirty: 1, pup: 1, music: 1, groups: 1, group: 1, seeded: 1, hidden: 1 };
   /* saved two levels deep, so two people changing different parts at the same moment both win */
   const DEEP = { santa: 1, games: 1, history: 1 };
   const LETTERS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -206,6 +206,8 @@
     const retry = () => setTimeout(() => { delete asked[id]; }, 20000);
     photoRef.child(enc(id)).once('value').then(s => { const v = s.val(); if (typeof v === 'string') A.photos.have(id, v); else retry(); }, retry);
   }
+  /* a photo nobody points at any more (its wish or picture was deleted) leaves the group too */
+  const dropPhoto = id => { if (photoRef && attached) photoRef.child(enc(id)).remove().catch(() => {}); };
   A.on('photo:miss', id => { if (!gid) return; if (attached && gotFirst) fetchPhoto(id); else missed.add(id); });
 
   /* ---------- who is online ----------
@@ -303,7 +305,7 @@
         '<div class="so-string" style="margin-top:10px">' + ['#ff5a5a', '#ffd76a', '#6fe3a5', '#7cc4ff', '#ffffff', '#ff9ad1', '#ffd76a', '#6fe3a5', '#ff5a5a'].map((c, i) => '<i style="left:' + (4 + i * 11.5) + '%;top:' + (Math.sin(Math.PI * (4 + i * 11.5) / 100) * 78).toFixed(0) + '%;--c:' + c + ';animation-delay:' + (-i * .37).toFixed(2) + 's"></i>').join('') + '</div>' +
         '<div class="gp-big"><div class="mu-pills"><button class="mu-pill green" id="wFam" style="min-height:54px">' + A.icon('tree', 20) + 'Family group</button><button class="mu-pill red" id="wFri" style="min-height:54px">' + A.icon('heart', 20) + 'Friend group</button></div>' +
         '<button class="mu-join" id="wJoin" style="min-height:50px">' + A.icon('plus', 18) + 'I have a code to join</button>' +
-        '<button class="btn ghost block" id="wMore">More kinds of groups</button></div>',
+        '<button class="btn ghost block" id="wMore">More kinds of groups</button></div>' + (A.safety ? A.safety.agreeHTML() : ''),
       onMount(el) { $('#wFam', el).onclick = () => createSheet('family'); $('#wFri', el).onclick = () => createSheet('friends'); $('#wJoin', el).onclick = () => joinSheet(); $('#wMore', el).onclick = () => moreKindsSheet(); }
     });
   }
@@ -322,7 +324,7 @@
       html: '<label class="field"><span>What should it be called?</span><input class="input" id="gName" maxlength="40" placeholder="' + esc(k[1] || 'Our group') + '" value="' + esc(k[1]) + '" autocomplete="off"></label>' +
         '<p class="muted" style="font-size:13px;margin:-4px 0 10px">You get a code to send to the people you want in it.</p>' +
         (bring ? '<label class="switch"><span class="s-text"><b>Bring over the lists on this device</b><small>Everything already saved here moves into the group.</small></span><input type="checkbox" id="gBring" checked></label>' : '') +
-        '<p class="gp-msg" id="gMsg"></p><button class="btn primary block" id="gGo">Start the group</button>',
+        '<p class="gp-msg" id="gMsg"></p><button class="btn primary block" id="gGo">Start the group</button>' + (A.safety ? A.safety.agreeHTML() : ''),
       onMount(el) {
         const btn = $('#gGo', el), inp = $('#gName', el);
         btn.onclick = () => {
@@ -339,7 +341,7 @@
       title: 'Join with a code',
       html: '<label class="field"><span>The code someone in the group sent you</span><input class="input code-in" id="jCode" maxlength="14" placeholder="ABCDE-12345" autocomplete="off" autocapitalize="characters" spellcheck="false" value="' + esc(code ? pretty(cleanCode(code)) : '') + '"></label>' +
         (bring ? '<label class="switch"><span class="s-text"><b>Bring over the lists on this device</b><small>They replace the group\'s copy for the same names. Leave this off to keep the group as it is.</small></span><input type="checkbox" id="jBring"></label>' : '') +
-        '<p class="gp-msg" id="jMsg"></p><button class="btn primary block" id="jGo">Join</button>',
+        '<p class="gp-msg" id="jMsg"></p><button class="btn primary block" id="jGo">Join</button>' + (A.safety ? A.safety.agreeHTML() : ''),
       onMount(el) {
         const btn = $('#jGo', el), inp = $('#jCode', el);
         const run = () => {
@@ -462,7 +464,7 @@
     });
   }
 
-  A.cloud = { status, synced: () => gotFirst, create, join, leave, welcome, createSheet, moreKindsSheet, joinSheet, groupSheet, peopleSheet, addPersonSheet, invite: () => { const g = groups().find(x => x.id === A.space()); if (g) invite(g.id, g.name); }, groups, pretty, inviteLink };
+  A.cloud = { status, synced: () => gotFirst, create, join, leave, welcome, createSheet, moreKindsSheet, joinSheet, groupSheet, peopleSheet, addPersonSheet, dropPhoto, invite: () => { const g = groups().find(x => x.id === A.space()); if (g) invite(g.id, g.name); }, groups, pretty, inviteLink };
 
   /* opened from an invite link */
   A.cloud.pendingJoin = (() => { const m = /^#\/join\/([A-Za-z0-9-]+)/.exec(location.hash); if (!m) return ''; try { history.replaceState(null, '', location.pathname + location.search + '#/'); } catch (e) {} return cleanCode(m[1]); })();

@@ -509,12 +509,13 @@ window.App = (function () {
         '<button class="mu-dot' + (school ? ' on' : '') + '" id="mnSchool"><span class="mu-c">' + App.icon('book', 22) + '</span><small>School mode<b>' + (school ? ' on' : ' off') + '</b></small></button>' +
         (lockOn ? '<button class="mu-dot" id="mnPin"><span class="mu-c">' + App.icon('lock', 22) + '</span><small>Locks</small></button>' : '') +
         (App.privacy && ME ? '<button class="mu-dot" id="mnPriv"><span class="mu-c">' + App.icon('eye', 22) + '</span><small>Who sees what</small></button>' : '') +
+        (App.safety ? '<button class="mu-dot" id="mnSafe"><span class="mu-c">' + App.icon('heart', 22) + '</span><small>Safety and rules</small></button>' : '') +
         '</div></div></div>',
       onMount(el, close) {
         const tap = (id, fn) => { const x = $('#' + id, el); if (x) x.onclick = fn; };
         tap('mnInvite', () => C.invite()); tap('mnPeople', () => { close(); C.peopleSheet(); }); tap('mnGroups', () => { close(); C.groupSheet(); });
         tap('mnFamily', () => C.createSheet('family')); tap('mnFriends', () => C.createSheet('friends')); tap('mnJoin', () => C.joinSheet()); tap('mnMore', () => C.moreKindsSheet());
-        tap('mnBg', () => { close(); ui.settings(); }); tap('mnPin', () => { close(); App.lock.optionsSheet(); }); tap('mnPriv', () => { close(); App.privacy.sheet(); });
+        tap('mnBg', () => { close(); ui.settings(); }); tap('mnPin', () => { close(); App.lock.optionsSheet(); }); tap('mnPriv', () => { close(); App.privacy.sheet(); }); tap('mnSafe', () => { close(); App.safety.sheet(); });
         tap('mnSchool', () => { const want = !school; close(); App.school.set(want); if (want) ui.toast('School mode is on.'); });
       }
     });

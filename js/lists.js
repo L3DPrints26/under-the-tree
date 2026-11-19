@@ -31,10 +31,19 @@
     },
     save() { A.store.set('lists', lists); A.store.set('plans', plans); A.store.set('share', share); },
     items: n => (lists[n] ? lists[n].items : []),
-    find: (n, id) => A.data.items(n).find(x => x.id === id)
+    find: (n, id) => A.data.items(n).find(x => x.id === id),
+    /* take a wish off someone's list, and out of everyone's picks */
+    remove(n, id) {
+      if (!lists[n]) return;
+      lists[n].items = A.data.items(n).filter(x => x.id !== id);
+      Object.keys(plans).forEach(g => { if (plans[g]) plans[g][id] = undefined; });
+      A.data.save();
+    }
   };
   const rank = x => (x.got ? -4 : 0) + (x.top ? 2 : 0) + (x.santa ? 1 : 0);
-  const sorted = n => A.data.items(n).slice().sort((a, b) => rank(b) - rank(a));
+  /* a wish you hid stays off your screen (your own list always shows whole) */
+  const shown = n => (n === A.me() || !A.safety ? A.data.items(n) : A.data.items(n).filter(it => !A.safety.hiddenWish(it.id)));
+  const sorted = n => shown(n).slice().sort((a, b) => rank(b) - rank(a));
   /* January still counts as last Christmas. From February the next season starts and received gifts move to Past years. */
   const seasonYear = () => { const d = A.now(); return d.getMonth() === 0 ? d.getFullYear() - 1 : d.getFullYear(); };
   function rollover() {
@@ -117,7 +126,14 @@
     tab: 'home',
     render(root, args) {
       const who = args[0]; if (A.names.indexOf(who) < 0) { A.go('#/'); return; }
-      const mine = who === A.me(), items = sorted(who), picked = mine ? 0 : items.filter(i => myPlan(i.id)).length;
+      const mine = who === A.me();
+      if (!mine && A.safety && A.safety.hiddenPerson(who)) {
+        root.innerHTML = '<div class="phead"><a class="icon-btn solid" href="#/" aria-label="Back">' + A.icon('back') + '</a>' + A.ui.avatar(who, 40) + '<div class="ttl"><h1 class="h1">' + esc(A.poss(who)) + ' list</h1><p>Hidden on this phone</p></div></div>' +
+          '<div class="empty">' + A.icon('eye', 54) + '<p>You hid this list. Nobody else can tell.</p><button class="btn primary" id="unhide">Show it again</button></div>';
+        $('#unhide', root).onclick = () => { A.safety.hidePerson(who, false); A.refresh(); };
+        return;
+      }
+      const items = sorted(who), picked = mine ? 0 : items.filter(i => myPlan(i.id)).length;
       const sub = items.length ? items.length + (items.length === 1 ? ' wish' : ' wishes') + (picked ? ', ' + picked + ' in your picks' : '') + (who === A.me() ? '. Everyone can see your list.' : '') : 'Nothing here yet';
       root.innerHTML = '<div class="phead"><a class="icon-btn solid" href="#/" aria-label="Back">' + A.icon('back') + '</a>' + A.ui.avatar(who, 40) +
         '<div class="ttl"><h1 class="h1">' + (mine ? 'Your list' : esc(A.poss(who)) + ' list') + '</h1><p>' + sub + '</p></div>' +
@@ -193,9 +209,11 @@
         (it.links && it.links.length ? '<div class="d-sec"><h3>Where to get it</h3><div class="links">' + it.links.map(u => '<a class="btn block" href="' + esc(u) + '" target="_blank" rel="noopener">' + A.icon('link', 18) + 'Open ' + esc(host(u)) + '</a>').join('') + '</div></div>' : '') +
         (b && b.name ? '<div class="d-sec"><h3>Backup, if the first choice does not work out</h3><div class="backup"><div class="row gap">' + (bsrc ? '<img src="' + esc(bsrc) + '" alt="" style="width:64px;height:64px;border-radius:10px;object-fit:cover">' : '') + '<div class="grow"><b>' + esc(b.name) + '</b>' + (b.price ? '<span class="wprice">' + esc(b.price) + '</span>' : '') + '</div></div>' +
           (b.note ? '<p class="d-note small" style="margin-top:8px">' + esc(b.note) + '</p>' : '') + (b.link ? '<a class="btn sm block" style="margin-top:10px" href="' + esc(b.link) + '" target="_blank" rel="noopener">' + A.icon('link', 16) + 'Open ' + esc(host(b.link)) + '</a>' : '') + '</div></div>' : '') +
+        (!mine && A.safety ? '<button class="sf-report" data-report>Report or hide this wish</button>' : '') +
         '<div class="sticky-acts">' + act + '</div>',
       onMount(el, close) {
-        const e1 = $('[data-edit]', el), c1 = $('[data-plan]', el);
+        const e1 = $('[data-edit]', el), c1 = $('[data-plan]', el), r1 = $('[data-report]', el);
+        if (r1) r1.onclick = () => { close(); A.safety.reportSheet(who, id); };
         if (e1) e1.onclick = () => { close(); openForm(who, id); };
         if (c1) c1.onclick = () => { close(); openPlan(who, id); };
       }
