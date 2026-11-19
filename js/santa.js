@@ -420,7 +420,7 @@ button.ss-tile:active{transform:scale(.97)}
       const sync = () => {
         const n = App.names.filter(x => S.votes[x]).length, mine = S.votes[me];
         $$('.ss-tile', el).forEach(t => { const on = t.dataset.n === mine; t.classList.toggle('on', on); t.setAttribute('aria-pressed', on); });
-        $('[data-ask]', el).textContent = mine ? 'Your vote is in. Tap another name to change it.' : 'Tap a name to cast your vote.';
+        $('[data-ask]', el).textContent = (mine ? 'Your vote is in. Tap another name to change it.' : 'Tap a name to cast your vote.') + ' Everyone sees who has voted. Nobody sees who you picked.';
         $('[data-prog]', el).textContent = n + ' of ' + all + ' have voted';
         $$('.ss-dot', el).forEach(d => d.classList.toggle('done', !!S.votes[d.dataset.n]));
         if (n >= all && !counting) { counting = true; el.classList.add('lock'); later(tally, App.reduced ? 300 : 900); }

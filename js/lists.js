@@ -112,12 +112,13 @@
       (others.length ? '<div class="wshare">' + others.map(o => '<span class="chip">' + esc(o.who) + ': ' + PLAN[o.st].toLowerCase() + '</span>').join('') + '</div>' : '') +
       '<div class="wacts">' + act + '</div></div></article>';
   }
+  A.openPicks = () => openPicks();
   A.pages.list = {
     tab: 'home',
     render(root, args) {
       const who = args[0]; if (A.names.indexOf(who) < 0) { A.go('#/'); return; }
       const mine = who === A.me(), items = sorted(who), picked = mine ? 0 : items.filter(i => myPlan(i.id)).length;
-      const sub = items.length ? items.length + (items.length === 1 ? ' wish' : ' wishes') + (picked ? ', ' + picked + ' in your picks' : '') : 'Nothing here yet';
+      const sub = items.length ? items.length + (items.length === 1 ? ' wish' : ' wishes') + (picked ? ', ' + picked + ' in your picks' : '') + (who === A.me() ? '. Everyone can see your list.' : '') : 'Nothing here yet';
       root.innerHTML = '<div class="phead"><a class="icon-btn solid" href="#/" aria-label="Back">' + A.icon('back') + '</a>' + A.ui.avatar(who, 40) +
         '<div class="ttl"><h1 class="h1">' + (mine ? 'Your list' : esc(A.poss(who)) + ' list') + '</h1><p>' + sub + '</p></div>' +
         '<button class="icon-btn solid" id="pastBtn" aria-label="Past gifts">' + A.icon('clock', 20) + '</button>' +

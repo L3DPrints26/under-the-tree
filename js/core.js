@@ -320,7 +320,7 @@ window.App = (function () {
     .mu-pill.line{flex:.8;background:transparent;border:1.5px solid var(--line2);color:#fff}
     .mu-join{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border-radius:12px;border:1.5px dashed rgba(255,255,255,.38);font-weight:600;font-size:14.5px;color:#e6edf7}
     .mu-round{display:flex;justify-content:space-around;gap:8px}
-    .mu-dot{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:84px}
+    .mu-dot{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;flex:1}
     .mu-c{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:var(--surface2);border:1.5px solid var(--line2);color:#fff;background-size:cover;background-position:center}
     .mu-photo{border-color:rgba(255,255,255,.55)}
     .mu-dot.on .mu-c{background:var(--gold);border-color:var(--gold);color:var(--gold-ink)}
@@ -466,12 +466,13 @@ window.App = (function () {
         '<button class="mu-dot" id="mnBg"><span class="mu-c mu-photo"' + (bg ? ' style="background-image:url(' + bg.thumb + ')"' : '') + '></span><small>Background</small></button>' +
         '<button class="mu-dot' + (school ? ' on' : '') + '" id="mnSchool"><span class="mu-c">' + App.icon('book', 22) + '</span><small>School mode<b>' + (school ? ' on' : ' off') + '</b></small></button>' +
         (lockOn ? '<button class="mu-dot" id="mnPin"><span class="mu-c">' + App.icon('lock', 22) + '</span><small>Locks</small></button>' : '') +
+        (App.privacy && ME ? '<button class="mu-dot" id="mnPriv"><span class="mu-c">' + App.icon('eye', 22) + '</span><small>Who sees what</small></button>' : '') +
         '</div></div></div>',
       onMount(el, close) {
         const tap = (id, fn) => { const x = $('#' + id, el); if (x) x.onclick = fn; };
         tap('mnInvite', () => C.invite()); tap('mnPeople', () => { close(); C.peopleSheet(); }); tap('mnGroups', () => { close(); C.groupSheet(); });
         tap('mnFamily', () => C.createSheet('family')); tap('mnFriends', () => C.createSheet('friends')); tap('mnJoin', () => C.joinSheet()); tap('mnMore', () => C.moreKindsSheet());
-        tap('mnBg', () => { close(); ui.settings(); }); tap('mnPin', () => { close(); App.lock.optionsSheet(); });
+        tap('mnBg', () => { close(); ui.settings(); }); tap('mnPin', () => { close(); App.lock.optionsSheet(); }); tap('mnPriv', () => { close(); App.privacy.sheet(); });
         tap('mnSchool', () => { const want = !school; close(); App.school.set(want); if (want) ui.toast('School mode is on.'); });
       }
     });

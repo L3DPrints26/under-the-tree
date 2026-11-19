@@ -200,7 +200,7 @@
     if (S.move !== 'blink' && Math.random() < .3) { S.move = 'blink'; S.fade = -1; S.moveUntil = Infinity; }
     $('b', hud).textContent = S.count; $('small', hud).textContent = gold ? 'double!' : 'presents'; hud.classList.remove('bump'); void hud.offsetWidth; hud.classList.add('bump');
   }
-  const scores = () => { const best = A.store.get('santaBest', {}) || {}; return A.names.map(n => ({ n, v: +best[n] || 0 })).filter(r => r.v > 0).sort((p, q) => q.v - p.v); };
+  const scores = () => { const best = A.store.get('santaBest', {}) || {}; return A.names.filter(n => n === A.me() || !(A.privacy && A.privacy.hidesScores(n))).map(n => ({ n, v: +best[n] || 0 })).filter(r => r.v > 0).sort((p, q) => q.v - p.v); };
   function showBoard(got, isBest, prev) {
     const me = A.me();
     board = A.ui.sheet({

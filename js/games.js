@@ -212,7 +212,8 @@
   }
   function bestOf(g, name) { const t = readAll()[g.id], v = t && t[name]; return g.valid(v) ? v : null; }
   function ranked(g) {
-    return A.names.map(n => ({ name: n, v: bestOf(g, n) })).filter(r => r.v != null)
+    const me = A.me(), hid = n => n !== me && A.privacy && A.privacy.hidesScores(n);
+    return A.names.filter(n => !hid(n)).map(n => ({ name: n, v: bestOf(g, n) })).filter(r => r.v != null)
       .sort((a, b) => g.better(a.v, b.v) ? -1 : g.better(b.v, a.v) ? 1 : 0);
   }
   /* record a result for the current person. returns { isBest, leads } */
@@ -500,7 +501,7 @@
   }
   /* the Santa chase on the home screen keeps its own scores; they belong on this board too */
   function santaBoard(me) {
-    const best = A.store.get('santaBest', {}) || {}, rows = A.names.map(n => ({ name: n, v: +best[n] || 0 })).filter(r => r.v > 0).sort((p, q) => q.v - p.v), rest = A.names.filter(n => !rows.some(r => r.name === n));
+    const best = A.store.get('santaBest', {}) || {}, rows = A.names.filter(n => n === me || !(A.privacy && A.privacy.hidesScores(n))).map(n => ({ name: n, v: +best[n] || 0 })).filter(r => r.v > 0).sort((p, q) => q.v - p.v), rest = A.names.filter(n => !rows.some(r => r.name === n));
     return '<section><h3>' + A.icon('sleigh', 18) + '<span>Santa Chase</span></h3><ol>' +
       rows.map((r, i) => '<li class="' + (i ? '' : 'top') + (r.name === me ? ' me' : '') + '"><span class="gm-rank">' + (i ? i + 1 : A.icon('crown', 17)) + '</span>' + A.ui.avatar(r.name, 28) + '<span class="gm-n">' + esc(r.name) + '</span><b>' + r.v + '<i>presents</i></b></li>').join('') +
       rest.map(n => '<li class="none' + (n === me ? ' me' : '') + '"><span class="gm-rank"></span>' + A.ui.avatar(n, 28) + '<span class="gm-n">' + esc(n) + '</span><em>No score</em></li>').join('') +
@@ -513,7 +514,7 @@
   }
   function mountHub(root) {
     root.innerHTML = '<div class="gm-hub">' +
-      '<div class="gm-top"><div class="gm-ttl"><h1 class="h1">Games</h1><p class="muted small">Scores save under ' + esc(A.me()) + '.</p></div>' +
+      '<div class="gm-top"><div class="gm-ttl"><h1 class="h1">Games</h1><p class="muted small">' + (A.privacy && A.privacy.hidesScores(A.me()) ? 'Your scores are hidden from everyone else.' : 'Scores save under ' + esc(A.me()) + '. Everyone can see them.') + '</p></div>' +
       '<button class="btn" data-lb>' + A.icon('trophy', 18) + '<span>Leaderboards</span></button></div>' +
       '<div class="gm-tiles">' + GAMES.map(tileHTML).join('') + '</div></div>';
     const arts = $$('[data-art]', root).map(el => ({ el, cv: $('canvas', el), g: GAMES.find(x => x.id === el.dataset.art), w: 0, h: 0 })).filter(a => a.cv && a.g.art);

@@ -203,11 +203,13 @@
   function announce() {
     if (!attached || !user || !connected) return;
     const me = A.me(); hereRef = hereRef || kvRef.child('online/' + enc(user.uid));
-    if (!me) { hereRef.remove().catch(() => {}); return; }
+    if (!me || (A.privacy && A.privacy.hidesOnline(me))) { hereRef.remove().catch(() => {}); return; }
     hereRef.onDisconnect().remove().catch(() => {});
     hereRef.set(JSON.stringify({ n: me })).catch(() => {});
   }
   A.on('me', announce);
+  A.on('privacy', announce);
+  A.on('sync', keys => { if (keys.indexOf('privacy') >= 0) announce(); });
 
   function attach() {
     gid = A.space(); if (!gid) return;
