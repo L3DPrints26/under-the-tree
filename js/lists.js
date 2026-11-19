@@ -139,12 +139,14 @@
         '<div class="ttl"><h1 class="h1">' + (mine ? 'Your list' : esc(A.poss(who)) + ' list') + '</h1><p>' + sub + '</p></div>' +
         '<button class="icon-btn solid" id="pastBtn" aria-label="Past gifts">' + A.icon('clock', 20) + '</button>' +
         (mine ? '<button class="btn primary sm" data-add>' + A.icon('plus', 18) + 'Add</button>' : '<button class="btn sm" id="picksBtn">' + A.icon('lock', 16) + 'My picks</button>') + '</div>' +
+        (A.about ? A.about.stripHTML(who) : '') +
         (items.length
           ? '<div class="reel" id="reel">' + items.map(it => cardHTML(who, it, mine)).join('') + (mine ? '<button class="wcard addcard" data-add>' + A.icon('plus', 30) + '<span>Add a wish</span></button>' : '') + '</div><div class="dots" id="dots"></div>'
           : '<div class="empty">' + A.icon('gift', 54) + '<p>' + (mine ? 'Add the first thing you are hoping for. A photo and a link make it easy to shop for you.' : esc(who) + ' has not added anything yet.') + '</p>' + (mine ? '<button class="btn primary" data-add>' + A.icon('plus', 18) + 'Add a wish</button>' : '') + '</div>');
       $$('[data-add]', root).forEach(b => b.onclick = () => openForm(who, null));
       const pb = $('#picksBtn', root); if (pb) pb.onclick = openPicks;
       $('#pastBtn', root).onclick = () => openPast(who);
+      if (A.about) A.about.wire(root, who);
       const reel = $('#reel', root); if (!reel) return;
       const cards = $$('.wcard', reel), dots = $('#dots', root);
       dots.innerHTML = cards.length > 1 && cards.length <= 14 ? cards.map((c, i) => '<i' + (i ? '' : ' class="on"') + '></i>').join('') : '';

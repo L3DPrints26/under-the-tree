@@ -123,7 +123,7 @@
     const share = obj('share');
     if (share) { delete share[me]; Object.keys(share).forEach(n => { if (Array.isArray(share[n])) share[n] = share[n].filter(x => x !== me); }); S.set('share', share); }
     const games = obj('games'); if (games) { Object.keys(games).forEach(g => { if (games[g] && typeof games[g] === 'object') delete games[g][me]; }); S.set('games', games); }
-    ['santaBest', 'advent', 'privacy', 'pins'].forEach(k => { const v = obj(k); if (v && me in v) { delete v[me]; S.set(k, v); } });
+    ['santaBest', 'advent', 'privacy', 'pins', 'about'].forEach(k => { const v = obj(k); if (v && me in v) { delete v[me]; S.set(k, v); } });
     const hist = obj('history');
     if (hist) { Object.keys(hist).forEach(y => { if (hist[y] && hist[y][me]) { hist[y][me].forEach(it => (it.photos || []).forEach(p => { if (p && p.id) pics.push(p.id); })); delete hist[y][me]; } }); S.set('history', hist); }
     const pp = obj('pics'); if (pp && pp[me]) { pics.push(pp[me]); delete pp[me]; S.set('pics', pp); }
@@ -145,7 +145,7 @@
     const me = A.me(); if (!me) return;
     A.ui.sheet({
       title: 'Delete my stuff',
-      html: '<p class="muted">This takes your wishes, photos, picks, scores, votes, picture and ornament out of this group, for everyone. It cannot be undone.</p>' +
+      html: '<p class="muted">This takes your wishes, photos, picks, quiz answers, scores, votes, picture and ornament out of this group, for everyone. It cannot be undone.</p>' +
         '<label class="field" style="margin-top:12px"><span>Type Delete to go ahead</span><input class="input" id="sfType" autocomplete="off" autocapitalize="off" spellcheck="false"></label>' +
         '<div class="lk-stack"><button class="btn danger block" id="sfDel">Delete my stuff</button><button class="btn danger block" id="sfDelName">Delete my stuff and take ' + esc(me) + ' off the group</button>' +
         '<button class="btn ghost block" data-close>Keep everything</button></div><p class="gp-msg" id="sfMsg" style="text-align:center"></p>',
