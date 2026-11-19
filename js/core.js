@@ -201,31 +201,48 @@ window.App = (function () {
   App.on('photo', paintPics);
 
   /* ---------- ornament looks ----------
-     Everyone's ornament has a style (pattern and shape), or a picture they made in the ornament designer.
-     Like the profile pictures, one style rule per person paints it everywhere that ornament hangs.
-     Busy patterns and pictures put the name on a dark tag so it always reads. */
-  const ORN_STYLES = [
-    { n: 'Classic', bg: '' },
-    { n: 'Candy stripe', bg: 'repeating-linear-gradient(135deg,rgba(255,255,255,.28) 0 7%,rgba(255,255,255,0) 7% 19%)', pill: 1 },
-    { n: 'Snow cap', bg: 'radial-gradient(ellipse 80% 48% at 50% -8%,rgba(255,255,255,.96) 0 58%,rgba(255,255,255,0) 60%)', r: '50% 50% 50% 50% / 58% 58% 42% 42%' },
-    { n: 'Gold bands', bg: 'linear-gradient(180deg,rgba(247,227,161,0) 28%,rgba(247,227,161,.92) 28% 32%,rgba(247,227,161,0) 32% 68%,rgba(247,227,161,.92) 68% 72%,rgba(247,227,161,0) 72%)' },
-    { n: 'Dots', bg: 'radial-gradient(circle,rgba(255,255,255,.72) 0 15%,rgba(255,255,255,0) 17%) 0 0/25% 25%', pill: 1 },
-    { n: 'Plaid', bg: 'repeating-linear-gradient(0deg,rgba(0,0,0,.22) 0 9%,rgba(0,0,0,0) 9% 24%),repeating-linear-gradient(90deg,rgba(255,255,255,.2) 0 9%,rgba(255,255,255,0) 9% 24%)', pill: 1, r: '50% 50% 50% 50% / 44% 44% 56% 56%' },
-    { n: 'Two tone', bg: 'linear-gradient(180deg,rgba(0,0,0,0) 55%,rgba(247,227,161,.92) 55% 58%,rgba(0,0,0,.3) 58%)' },
-    { n: 'Sparkle', bg: 'radial-gradient(circle at 22% 64%,#fff 0 2.4%,transparent 3.2%),radial-gradient(circle at 72% 24%,#fff 0 2.8%,transparent 3.6%),radial-gradient(circle at 82% 66%,#ffe9a8 0 2.4%,transparent 3.2%),radial-gradient(circle at 38% 84%,#ffe9a8 0 2.2%,transparent 3%),radial-gradient(circle at 52% 13%,#fff 0 2%,transparent 2.8%)' }
+     Every ornament is one small drawing: a shaded glass ball in the person's color, a pattern that curves
+     around it the way it would on a real one, and a darker ribbon band across the middle where the name
+     sits, so the name always reads. A picture made in the ornament designer goes under the same band
+     and shine. One style rule per person paints it everywhere that ornament hangs. */
+  const ORN_NAMES = ['Classic', 'Stripes', 'Snow cap', 'Dots', 'Stars', 'Nordic', 'Dipped', 'Gold caps'];
+  const curve = (base, sag, amp, step) => { let d = '', i = 0; for (let x = -2; x <= 102; x += step, i++) d += (i ? 'L' : 'M') + x + ' ' + (base + sag * (1 - Math.pow((x - 50) / 50, 2)) + (amp ? (i % 2 ? -amp : amp) : 0)).toFixed(1); return d; };
+  const star = (x, y, s) => 'M' + x + ' ' + (y - s) + 'L' + (x + s * .26) + ' ' + (y - s * .26) + 'L' + (x + s) + ' ' + y + 'L' + (x + s * .26) + ' ' + (y + s * .26) + 'L' + x + ' ' + (y + s) + 'L' + (x - s * .26) + ' ' + (y + s * .26) + 'L' + (x - s) + ' ' + y + 'L' + (x - s * .26) + ' ' + (y - s * .26) + 'Z';
+  const dotRow = (y, longs, r) => { const cy = Math.sqrt(Math.max(0, 1 - Math.pow((50 - y) / 46, 2))); return longs.map(l => { const rad = l * Math.PI / 180; return '<ellipse cx="' + (50 + 46 * cy * Math.sin(rad)).toFixed(1) + '" cy="' + y + '" rx="' + (r * Math.cos(rad)).toFixed(2) + '" ry="' + r + '"/>'; }).join(''); };
+  const ORN_PAT = [
+    () => '<path d="' + curve(15, 8) + '" fill="none" stroke="#f3d98a" stroke-opacity=".75" stroke-width="1.1"/><path d="' + curve(72, 11) + '" fill="none" stroke="#f3d98a" stroke-opacity=".75" stroke-width="1.1"/>',
+    () => '<g fill="#fff" fill-opacity=".3"><path d="M50 1A46 49 0 0 0 50 99A33 49 0 0 1 50 1Z"/><path d="M50 1A19 49 0 0 0 50 99A6 49 0 0 1 50 1Z"/><path d="M50 1A46 49 0 0 1 50 99A33 49 0 0 0 50 1Z"/><path d="M50 1A19 49 0 0 1 50 99A6 49 0 0 0 50 1Z"/></g>',
+    () => '<path d="M0 0H100V22Q94 31 86 24Q78 17 70 25Q62 33 54 25Q46 17 38 25Q30 33 22 25Q14 17 6 25Q2 29 0 26Z" fill="#f6fbff" fill-opacity=".97"/><g fill="#fff" fill-opacity=".85">' + dotRow(74, [-55, -10, 38], 1.5) + dotRow(84, [-28, 14, 52], 1.3) + '</g>',
+    () => '<g fill="#fff" fill-opacity=".92">' + dotRow(13, [-34, 0, 34], 3.1) + dotRow(24, [-58, -20, 20, 58], 3.1) + dotRow(74, [-58, -20, 20, 58], 3.1) + dotRow(86, [-34, 0, 34], 3.1) + '</g>',
+    () => '<g fill="#fff3c4"><path d="' + star(27, 19, 5.5) + '"/><path d="' + star(58, 13, 4) + '"/><path d="' + star(79, 25, 3.6) + '"/><path d="' + star(23, 76, 4) + '"/><path d="' + star(50, 85, 5.5) + '"/><path d="' + star(77, 75, 4) + '"/></g>',
+    () => '<g fill="none" stroke="#fff" stroke-opacity=".9" stroke-width="1.7" stroke-linejoin="round"><path d="' + curve(11, 7, 2.6, 6.5) + '"/><path d="' + curve(21, 9, 2.6, 6.5) + '"/><path d="' + curve(69, 11, 2.6, 6.5) + '"/><path d="' + curve(79, 10, 2.6, 6.5) + '"/></g>',
+    () => '<path d="' + curve(56, 11) + 'V100H0Z" fill="#000" fill-opacity=".3"/><path d="' + curve(33, 9) + 'V0H0Z" fill="#fff" fill-opacity=".14"/><g fill="#ffe9a8" fill-opacity=".95">' + dotRow(75, [-62, -34, -8, 20, 46], 1.2) + dotRow(82, [-46, -20, 6, 32, 58], 1) + dotRow(89, [-28, 0, 28], .9) + '</g>',
+    () => '<path d="M0 0H100V10Q50 21 0 10Z" fill="#f3d98a" fill-opacity=".95"/><path d="M0 84Q50 97 100 84V100H0Z" fill="#f3d98a" fill-opacity=".95"/><path d="' + curve(14, 10) + '" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width=".9"/><path d="' + curve(79, 12) + '" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width=".9"/>'
   ];
-  const ORN_SHINE = 'radial-gradient(circle at 30% 26%,rgba(255,255,255,.95) 0,rgba(255,255,255,.5) 5%,rgba(255,255,255,0) 20%),radial-gradient(circle at 72% 80%,rgba(255,255,255,.18) 0,rgba(255,255,255,0) 34%)';
-  const ORN_BASE = 'radial-gradient(circle at 38% 32%,var(--c1) 0,var(--c2) 56%,var(--c3) 100%)';
-  const ORN_TAG = '{background:rgba(6,14,30,.74);padding:.16em .55em;border-radius:999px;box-shadow:0 0 0 1.5px rgba(255,255,255,.22)}';
-  App.ornStyles = ORN_STYLES;
-  App.ornOf = n => { const o = (App.store.get('orns', {}) || {})[n]; return o && typeof o === 'object' ? o : { st: Math.max(0, App.names.indexOf(n)) % ORN_STYLES.length }; };
+  /* style -1 is only the band, shading and shine, to lay over a picture */
+  App.ornArt = (style, c) => {
+    const over = style < 0, band = over ? '#060e1e' : c[2];
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs>' +
+      '<radialGradient id="b" cx="36%" cy="30%" r="80%"><stop offset="0" stop-color="' + c[0] + '"/><stop offset=".55" stop-color="' + c[1] + '"/><stop offset="1" stop-color="' + c[2] + '"/></radialGradient>' +
+      '<radialGradient id="r"><stop offset=".6" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".46"/></radialGradient>' +
+      '<radialGradient id="h"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset=".4" stop-color="#fff" stop-opacity=".32"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>' +
+      '<clipPath id="c"><circle cx="50" cy="50" r="50"/></clipPath></defs><g clip-path="url(#c)">' +
+      (over ? '' : '<rect width="100" height="100" fill="url(#b)"/>' + ORN_PAT[((style | 0) % ORN_PAT.length + ORN_PAT.length) % ORN_PAT.length]()) +
+      '<path d="M-2 33Q50 43 102 33V56Q50 68 -2 56Z" fill="' + band + '" fill-opacity="' + (over ? '.8' : '.9') + '"/>' +
+      '<path d="M-2 33Q50 43 102 33" fill="none" stroke="#f3d98a" stroke-width="1.5"/><path d="M-2 56Q50 68 102 56" fill="none" stroke="#f3d98a" stroke-width="1.5"/>' +
+      '<rect width="100" height="100" fill="url(#r)"/>' +
+      '<ellipse cx="32" cy="25" rx="21" ry="13" fill="url(#h)" transform="rotate(-30 32 25)"/><ellipse cx="27" cy="20" rx="5" ry="2.6" fill="#fff" fill-opacity=".9" transform="rotate(-30 27 20)"/>' +
+      '<path d="M22 86Q50 98 78 86" fill="none" stroke="#fff" stroke-opacity=".16" stroke-width="3.5" stroke-linecap="round"/>' +
+      '</g></svg>';
+    return 'url("data:image/svg+xml,' + encodeURIComponent(svg) + '")';
+  };
+  App.ornStyles = ORN_NAMES.map(n => ({ n }));
+  App.ornOf = n => { const o = (App.store.get('orns', {}) || {})[n]; return o && typeof o === 'object' ? o : { st: Math.max(0, App.names.indexOf(n)) % ORN_NAMES.length }; };
   const ornCss = document.createElement('style'); document.head.appendChild(ornCss);
   const paintOrns = () => {
     ornCss.textContent = App.names.map(n => {
-      const o = App.ornOf(n), sel = '.orn[data-name="' + n + '"]', plain = sel + ' .ball::before,' + sel + ' .ball::after{display:none}';
-      if (o.img) { const src = App.photos.src({ id: o.img }); if (src) return sel + ' .ball{background:' + ORN_SHINE + ',url("' + src + '") center/cover}' + plain + sel + ' .bname' + ORN_TAG; }
-      const s = ORN_STYLES[(o.st | 0) % ORN_STYLES.length] || ORN_STYLES[0];
-      return sel + ' .ball{background:' + ORN_SHINE + (s.bg ? ',' + s.bg : '') + ',' + ORN_BASE + (s.r ? ';border-radius:' + s.r : '') + '}' + (s.bg ? plain : '') + (s.pill ? sel + ' .bname' + ORN_TAG : '');
+      const o = App.ornOf(n), p = App.person(n), sel = '.orn[data-name="' + n + '"]', src = o.img ? App.photos.src({ id: o.img }) : '';
+      return sel + ' .ball{background:' + (src ? App.ornArt(-1, p.c) + ' center/100% 100%,url("' + src + '") center/cover' : App.ornArt(o.st | 0, p.c) + ' center/100% 100%') + '}' + sel + ' .ball::before,' + sel + ' .ball::after{display:none}';
     }).join('');
   };
   App.setOrn = (name, design) => { const o = App.store.get('orns', {}) || {}; o[name] = design; App.store.set('orns', o); paintOrns(); };
@@ -267,7 +284,8 @@ window.App = (function () {
     .sheet-head{padding-top:22px}
     .sheet-head h2{font-size:23px}
     .sheet-back.under{visibility:hidden}
-    .bname{text-shadow:0 2px 4px rgba(0,0,0,.75),0 0 2px rgba(0,0,0,.85)}
+    .bname{text-shadow:0 1px 3px rgba(0,0,0,.8);color:#fff8e6}
+    .ball{box-shadow:0 calc(var(--size)*.1) calc(var(--size)*.22) rgba(0,0,0,.5)}
     .who-orn{display:flex;align-items:center;gap:12px;width:100%;margin-top:10px;padding:10px 14px;border-radius:16px;text-align:left;background:#7d1727;border:1px solid #b33247}
     .who-orn:active{transform:scale(.98)}
     .who-orn-b{width:38px;height:38px;border-radius:50%;flex:none;background:radial-gradient(circle at 30% 26%,rgba(255,255,255,.95) 0,rgba(255,255,255,.4) 7%,rgba(255,255,255,0) 22%),repeating-linear-gradient(135deg,rgba(255,255,255,.3) 0 7%,rgba(255,255,255,0) 7% 19%),radial-gradient(circle at 38% 32%,#ffe08a,#d49a1c 58%,#6b4a06);box-shadow:inset -3px -4px 8px rgba(0,0,0,.35)}

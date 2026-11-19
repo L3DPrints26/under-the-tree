@@ -8,11 +8,13 @@
   A.css(`
     .oe{display:flex;flex-direction:column;gap:12px}
     .oe-top{display:flex;align-items:center;gap:16px}
-    .oe-ball{position:relative;width:148px;height:148px;flex:none;border-radius:50%;display:grid;place-items:center;overflow:hidden;box-shadow:inset -12px -15px 30px rgba(0,0,0,.42),0 10px 24px rgba(0,0,0,.45);touch-action:none}
+    .oe-ball{position:relative;width:148px;height:148px;flex:none;border-radius:50%;display:grid;place-items:center;overflow:hidden;box-shadow:0 10px 24px rgba(0,0,0,.5);touch-action:none}
     .oe-ball canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%}
     .oe-ball::after{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;background:radial-gradient(circle at 30% 26%,rgba(255,255,255,.9) 0,rgba(255,255,255,.4) 5%,rgba(255,255,255,0) 20%),radial-gradient(circle at 72% 80%,rgba(255,255,255,.16) 0,rgba(255,255,255,0) 34%)}
-    .oe-name{position:relative;z-index:1;pointer-events:none;font-family:var(--script);font-size:24px;line-height:1;color:#fffdf2;text-shadow:0 2px 4px rgba(0,0,0,.7)}
-    .oe-name.tag{background:rgba(6,14,30,.72);padding:.16em .55em;border-radius:999px;box-shadow:0 0 0 1.5px rgba(255,255,255,.22)}
+    .oe-name{position:relative;z-index:1;pointer-events:none;font-family:var(--script);font-size:26px;line-height:1;color:#fff8e6;text-shadow:0 1px 3px rgba(0,0,0,.8)}
+    .oe-over{position:absolute;inset:0;border-radius:50%;pointer-events:none}
+    .oe-ball::after{display:none}
+    .oe-st{box-shadow:none}
     .oe-side{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
     .oe-side p{font-size:13.5px;color:var(--muted)}
     .oe-tabs{display:flex;gap:6px}
@@ -38,10 +40,10 @@
     const S = A.ornStyles, cur = A.ornOf(me), person = () => A.person(me);
     let mode = cur.img ? 'photo' : 'style', st = cur.img ? 0 : (cur.st | 0) % S.length, color = Math.max(0, A.palette.findIndex(c => c[0] === person().c[0]));
     let photo = null, zoom = 1, dx = 0, dy = 0, ink = INK[0], brush = 10, undo = [], touched = !!cur.img;
-    const styleBg = (i, c) => 'radial-gradient(circle at 30% 26%,rgba(255,255,255,.95) 0,rgba(255,255,255,.5) 5%,rgba(255,255,255,0) 20%)' + (S[i].bg ? ',' + S[i].bg : '') + ',radial-gradient(circle at 38% 32%,' + c[0] + ' 0,' + c[1] + ' 56%,' + c[2] + ' 100%)';
+    const styleBg = (i, c) => A.ornArt(i, c) + ' center/100% 100%';
     A.ui.sheet({
       title: 'Your ornament', cls: 'orn-ed',
-      html: '<div class="oe"><div class="oe-top"><div class="oe-ball" id="oeBall"><canvas id="oeCv" width="320" height="320" hidden></canvas><span class="oe-name" id="oeName">' + esc(me) + '</span></div>' +
+      html: '<div class="oe"><div class="oe-top"><div class="oe-ball" id="oeBall"><canvas id="oeCv" width="320" height="320" hidden></canvas><span class="oe-over" id="oeOver" hidden></span><span class="oe-name" id="oeName">' + esc(me) + '</span></div>' +
         '<div class="oe-side"><p id="oeHint"></p><div class="oe-tabs"><button data-t="style">Styles</button><button data-t="photo">Photo</button><button data-t="draw">Draw</button></div></div></div>' +
         '<div class="oe-pane" id="oeStyle"><div class="oe-styles">' + S.map((s, i) => '<button class="oe-st" data-st="' + i + '" aria-label="' + esc(s.n) + '"></button>').join('') + '</div>' +
           '<div class="oe-colors">' + A.palette.map((c, i) => '<button class="oe-sw" data-c="' + i + '" style="background:' + c[1] + '" aria-label="Color ' + (i + 1) + '"></button>').join('') + '</div></div>' +
@@ -65,7 +67,7 @@
         };
         const paint = () => {
           const custom = mode !== 'style';
-          cv.hidden = !custom; nameEl.classList.toggle('tag', custom || !!S[st].pill);
+          const over = $('#oeOver', el); cv.hidden = !custom; over.hidden = !custom; over.style.background = A.ornArt(-1, A.palette[color]) + ' center/100% 100%';
           ball.style.background = custom ? '#0a1429' : styleBg(st, A.palette[color]);
           $$('.oe-st', el).forEach((b, i) => { b.style.background = styleBg(i, A.palette[color]); b.classList.toggle('on', i === st && mode === 'style'); });
           $$('[data-c]', el).forEach((b, i) => b.classList.toggle('on', i === color));
