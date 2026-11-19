@@ -10,7 +10,7 @@
   --r:18px; --r-sm:12px; --r-xs:8px;
   --font:"DM Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --display:"Fraunces",Georgia,"Times New Roman",serif;
-  --script:"Berkshire Swash","Fraunces",Georgia,serif;
+  --script:"Playfair Display","Fraunces",Georgia,serif;
   --tap:44px;
 }
 *{box-sizing:border-box;margin:0;padding:0}

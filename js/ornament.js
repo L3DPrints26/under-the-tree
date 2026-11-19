@@ -19,7 +19,7 @@
     .oe2-ball{position:relative;border-radius:50%;overflow:hidden;display:grid;place-items:center;box-shadow:0 14px 40px rgba(0,0,0,.6),0 0 0 3px rgba(233,196,106,.35);touch-action:none;cursor:crosshair}
     .oe2-ball canvas{position:absolute;inset:0;width:100%;height:100%}
     .oe2-over{position:absolute;inset:0;pointer-events:none;transition:opacity .2s}
-    .oe2-name{position:relative;z-index:1;pointer-events:none;font-family:var(--script);line-height:1;color:#fff8e6;text-shadow:0 1px 3px rgba(0,0,0,.8);transition:opacity .2s}
+    .oe2-name{position:relative;z-index:1;pointer-events:none;font-family:var(--script);font-style:italic;font-weight:700;line-height:1;color:#fff8e6;text-shadow:0 1px 3px rgba(0,0,0,.8);transition:opacity .2s}
     .oe2-ball.bare .oe2-over,.oe2-ball.bare .oe2-name{opacity:0}
     .oe2-tools{flex:none;display:flex;flex-direction:column;gap:8px;padding:8px 12px 12px;background:#0f1b33;border-top:1px solid var(--line2);border-radius:20px 20px 0 0}
     .oe2-tabs{display:flex;gap:6px}

@@ -34,6 +34,7 @@
     .so-orn{flex:none}
     .so-orn .bname{white-space:nowrap}
     .so-orn.off .ball{filter:grayscale(.8) brightness(.62)}
+    .so-orn .ball::before,.so-orn .ball::after{display:none}
     .so-orn.off .olabel{background:rgba(6,14,30,.8);color:#dfe7f3}
     .so-orn .olabel{font-size:13px;padding:3px 10px}
     .so-orn[disabled]{opacity:.55}
@@ -199,7 +200,7 @@
   function optionsSheet() {
     const me = A.me(); if (!me) return;
     const orn = (id, word, c, len, on, note, fs) => '<button class="orn so-orn' + (on ? ' me' : ' off') + '" id="' + id + '" style="--size:86px;--c1:' + c[0] + ';--c2:' + c[1] + ';--c3:' + c[2] + ';--len:' + len + 'px;--dur:' + (4 + len / 12).toFixed(1) + 's">' +
-      '<span class="hang"><span class="thread"></span><span class="cap"></span><span class="ball"><span class="bname"' + (fs ? ' style="font-size:' + fs + 'px"' : '') + '>' + word + '</span></span><span class="olabel">' + note + '</span></span></button>';
+      '<span class="hang"><span class="thread"></span><span class="cap"></span><span class="ball" style="background:' + A.ornArt(id === 'soPin' ? 1 : id === 'soPw' ? 3 : 4, c).replace(/"/g, "'") + ' center/100% 100%"><span class="bname"' + (fs ? ' style="font-size:' + fs + 'px"' : '') + '>' + word + '</span></span><span class="olabel">' + note + '</span></span></button>';
     const bulbs = ['#ff5a5a', '#ffd76a', '#6fe3a5', '#7cc4ff', '#ffffff', '#ff9ad1', '#ffd76a', '#6fe3a5', '#ff5a5a'];
     A.ui.sheet({
       title: 'Your locks', cls: 'so',

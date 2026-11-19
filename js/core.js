@@ -205,34 +205,45 @@ window.App = (function () {
      around it the way it would on a real one, and a darker ribbon band across the middle where the name
      sits, so the name always reads. A picture made in the ornament designer goes under the same band
      and shine. One style rule per person paints it everywhere that ornament hangs. */
-  const ORN_NAMES = ['Classic', 'Stripes', 'Snow cap', 'Dots', 'Stars', 'Nordic', 'Dipped', 'Gold caps'];
-  const curve = (base, sag, amp, step) => { let d = '', i = 0; for (let x = -2; x <= 102; x += step, i++) d += (i ? 'L' : 'M') + x + ' ' + (base + sag * (1 - Math.pow((x - 50) / 50, 2)) + (amp ? (i % 2 ? -amp : amp) : 0)).toFixed(1); return d; };
-  const star = (x, y, s) => 'M' + x + ' ' + (y - s) + 'L' + (x + s * .26) + ' ' + (y - s * .26) + 'L' + (x + s) + ' ' + y + 'L' + (x + s * .26) + ' ' + (y + s * .26) + 'L' + x + ' ' + (y + s) + 'L' + (x - s * .26) + ' ' + (y + s * .26) + 'L' + (x - s) + ' ' + y + 'L' + (x - s * .26) + ' ' + (y - s * .26) + 'Z';
-  const dotRow = (y, longs, r) => { const cy = Math.sqrt(Math.max(0, 1 - Math.pow((50 - y) / 46, 2))); return longs.map(l => { const rad = l * Math.PI / 180; return '<ellipse cx="' + (50 + 46 * cy * Math.sin(rad)).toFixed(1) + '" cy="' + y + '" rx="' + (r * Math.cos(rad)).toFixed(2) + '" ry="' + r + '"/>'; }).join(''); };
+  const ORN_NAMES = ['Glass', 'Pinstripe', 'Frosted', 'Snowflakes', 'Gold stars', 'Nordic', 'Glitter dip', 'Sparkle'];
+  const hexTone = (hex, k) => { const n = parseInt(hex.slice(1), 16), t = k < 0 ? 0 : 255, m = Math.abs(k), ch = v => Math.round(v + (t - v) * m); return 'rgb(' + ch(n >> 16 & 255) + ',' + ch(n >> 8 & 255) + ',' + ch(n & 255) + ')'; };
+  /* a line that sags the way a ring around a ball does when you look at it from slightly above */
+  const curve = (base, sag, amp, step) => { let d = '', i = 0; for (let x = -4; x <= 204; x += (step || 8), i++) d += (i ? 'L' : 'M') + x + ' ' + (base + sag * (1 - Math.pow((x - 100) / 100, 2)) + (amp ? (i % 2 ? -amp : amp) : 0)).toFixed(1); return d; };
+  const star = (x, y, s) => 'M' + x + ' ' + (y - s) + 'L' + (x + s * .24) + ' ' + (y - s * .24) + 'L' + (x + s) + ' ' + y + 'L' + (x + s * .24) + ' ' + (y + s * .24) + 'L' + x + ' ' + (y + s) + 'L' + (x - s * .24) + ' ' + (y + s * .24) + 'L' + (x - s) + ' ' + y + 'L' + (x - s * .24) + ' ' + (y - s * .24) + 'Z';
+  const flake = (x, y, s) => { let d = ''; for (let k = 0; k < 6; k++) { const an = k * Math.PI / 3, cx = Math.cos(an), sy = Math.sin(an), px = x + cx * s, py = y + sy * s, bx = x + cx * s * .58, by = y + sy * s * .58, b1 = an + .9, b2 = an - .9; d += 'M' + x + ' ' + y + 'L' + px.toFixed(1) + ' ' + py.toFixed(1) + 'M' + bx.toFixed(1) + ' ' + by.toFixed(1) + 'L' + (bx + Math.cos(b1) * s * .3).toFixed(1) + ' ' + (by + Math.sin(b1) * s * .3).toFixed(1) + 'M' + bx.toFixed(1) + ' ' + by.toFixed(1) + 'L' + (bx + Math.cos(b2) * s * .3).toFixed(1) + ' ' + (by + Math.sin(b2) * s * .3).toFixed(1); } return d; };
+  const dotRow = (y, longs, r) => { const cy = Math.sqrt(Math.max(0, 1 - Math.pow((100 - y) / 94, 2))); return longs.map(l => { const rad = l * Math.PI / 180; return '<ellipse cx="' + (100 + 94 * cy * Math.sin(rad)).toFixed(1) + '" cy="' + y + '" rx="' + (r * Math.cos(rad)).toFixed(2) + '" ry="' + r + '"/>'; }).join(''); };
+  const GOLD = '#f6dc8c', FROST = 'M0 0H200V50Q186 64 172 52Q158 40 144 54Q130 68 116 54Q102 40 88 54Q74 68 60 54Q46 40 32 52Q16 64 0 52Z', DIP = 'M0 142Q26 130 52 142Q78 154 104 142Q130 130 156 142Q180 152 200 142V200H0Z';
   const ORN_PAT = [
-    () => '<path d="' + curve(15, 8) + '" fill="none" stroke="#f3d98a" stroke-opacity=".75" stroke-width="1.1"/><path d="' + curve(72, 11) + '" fill="none" stroke="#f3d98a" stroke-opacity=".75" stroke-width="1.1"/>',
-    () => '<g fill="#fff" fill-opacity=".3"><path d="M50 1A46 49 0 0 0 50 99A33 49 0 0 1 50 1Z"/><path d="M50 1A19 49 0 0 0 50 99A6 49 0 0 1 50 1Z"/><path d="M50 1A46 49 0 0 1 50 99A33 49 0 0 0 50 1Z"/><path d="M50 1A19 49 0 0 1 50 99A6 49 0 0 0 50 1Z"/></g>',
-    () => '<path d="M0 0H100V22Q94 31 86 24Q78 17 70 25Q62 33 54 25Q46 17 38 25Q30 33 22 25Q14 17 6 25Q2 29 0 26Z" fill="#f6fbff" fill-opacity=".97"/><g fill="#fff" fill-opacity=".85">' + dotRow(74, [-55, -10, 38], 1.5) + dotRow(84, [-28, 14, 52], 1.3) + '</g>',
-    () => '<g fill="#fff" fill-opacity=".92">' + dotRow(13, [-34, 0, 34], 3.1) + dotRow(24, [-58, -20, 20, 58], 3.1) + dotRow(74, [-58, -20, 20, 58], 3.1) + dotRow(86, [-34, 0, 34], 3.1) + '</g>',
-    () => '<g fill="#fff3c4"><path d="' + star(27, 19, 5.5) + '"/><path d="' + star(58, 13, 4) + '"/><path d="' + star(79, 25, 3.6) + '"/><path d="' + star(23, 76, 4) + '"/><path d="' + star(50, 85, 5.5) + '"/><path d="' + star(77, 75, 4) + '"/></g>',
-    () => '<g fill="none" stroke="#fff" stroke-opacity=".9" stroke-width="1.7" stroke-linejoin="round"><path d="' + curve(11, 7, 2.6, 6.5) + '"/><path d="' + curve(21, 9, 2.6, 6.5) + '"/><path d="' + curve(69, 11, 2.6, 6.5) + '"/><path d="' + curve(79, 10, 2.6, 6.5) + '"/></g>',
-    () => '<path d="' + curve(56, 11) + 'V100H0Z" fill="#000" fill-opacity=".3"/><path d="' + curve(33, 9) + 'V0H0Z" fill="#fff" fill-opacity=".14"/><g fill="#ffe9a8" fill-opacity=".95">' + dotRow(75, [-62, -34, -8, 20, 46], 1.2) + dotRow(82, [-46, -20, 6, 32, 58], 1) + dotRow(89, [-28, 0, 28], .9) + '</g>',
-    () => '<path d="M0 0H100V10Q50 21 0 10Z" fill="#f3d98a" fill-opacity=".95"/><path d="M0 84Q50 97 100 84V100H0Z" fill="#f3d98a" fill-opacity=".95"/><path d="' + curve(14, 10) + '" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width=".9"/><path d="' + curve(79, 12) + '" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width=".9"/>'
+    () => '',
+    () => '<g fill="none" stroke="' + GOLD + '" stroke-opacity=".9"><path d="' + curve(18, 12) + '" stroke-width="1.2"/><path d="' + curve(26, 14) + '" stroke-width="2.4"/><path d="' + curve(34, 15) + '" stroke-width="1.2"/><path d="' + curve(142, 19) + '" stroke-width="1.2"/><path d="' + curve(151, 20) + '" stroke-width="2.4"/><path d="' + curve(160, 20) + '" stroke-width="1.2"/></g>',
+    () => '<clipPath id="k"><path d="' + FROST + '"/></clipPath><path d="' + FROST + '" fill="#f4f9ff"/><rect width="200" height="80" filter="url(#gl)" clip-path="url(#k)" opacity=".9"/><path d="M0 52Q16 64 32 52Q46 40 60 54Q74 68 88 54Q102 40 116 54Q130 68 144 54Q158 40 172 52Q186 64 200 50" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="2" filter="url(#s)"/><g fill="#fff" fill-opacity=".85">' + dotRow(150, [-52, -8, 40], 2.2) + dotRow(166, [-30, 14, 50], 1.8) + dotRow(180, [-10, 24], 1.5) + '</g>',
+    () => '<g fill="none" stroke="#fff" stroke-opacity=".93" stroke-width="1.9" stroke-linecap="round"><path d="' + flake(50, 46, 15) + '"/><path d="' + flake(108, 30, 11) + '"/><path d="' + flake(156, 54, 13) + '"/><path d="' + flake(46, 158, 12) + '"/><path d="' + flake(104, 172, 15) + '"/><path d="' + flake(158, 150, 11) + '"/></g>',
+    () => '<g fill="' + GOLD + '"><path d="' + star(52, 42, 13) + '"/><path d="' + star(112, 28, 8) + '"/><path d="' + star(156, 52, 10) + '"/><path d="' + star(44, 156, 9) + '"/><path d="' + star(102, 172, 13) + '"/><path d="' + star(158, 150, 8) + '"/></g><g fill="#fff" fill-opacity=".85">' + dotRow(60, [-44, 6, 52], 1.5) + dotRow(146, [-20, 30], 1.5) + '</g>',
+    () => '<g fill="none" stroke="#fff" stroke-opacity=".92" stroke-width="2.2" stroke-linejoin="round"><path d="' + curve(22, 13, 4.5, 11) + '"/><path d="' + curve(150, 20, 4.5, 11) + '"/></g><g fill="#fff" fill-opacity=".92">' + dotRow(52, [-62, -42, -22, 0, 22, 42, 62], 2.4) + dotRow(148, [-62, -42, -22, 0, 22, 42, 62], 2.4) + '</g><g fill="none" stroke="' + GOLD + '" stroke-opacity=".9" stroke-width="1.3"><path d="' + curve(30, 14) + '"/><path d="' + curve(172, 16) + '"/></g>',
+    () => '<clipPath id="k"><path d="' + DIP + '"/></clipPath><path d="' + DIP + '" fill="#e2bb52"/><rect y="120" width="200" height="80" filter="url(#gl)" clip-path="url(#k)"/><path d="M0 142Q26 130 52 142Q78 154 104 142Q130 130 156 142Q180 152 200 142" fill="none" stroke="#fff3c4" stroke-opacity=".8" stroke-width="1.6"/>',
+    () => '<rect width="200" height="200" filter="url(#gl)" opacity=".7"/><g fill="#fff"><path d="' + star(48, 50, 9) + '"/><path d="' + star(150, 40, 7) + '"/><path d="' + star(60, 160, 7) + '"/><path d="' + star(146, 158, 9) + '"/></g>'
   ];
-  /* style -1 is only the band, shading and shine, to lay over a picture */
+  /* style -1 is only the name shadow, shading and reflections, to lay over a picture */
   App.ornArt = (style, c) => {
-    const over = style < 0, band = over ? '#060e1e' : c[2];
-    const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs>' +
-      '<radialGradient id="b" cx="36%" cy="30%" r="80%"><stop offset="0" stop-color="' + c[0] + '"/><stop offset=".55" stop-color="' + c[1] + '"/><stop offset="1" stop-color="' + c[2] + '"/></radialGradient>' +
-      '<radialGradient id="r"><stop offset=".6" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".46"/></radialGradient>' +
-      '<radialGradient id="h"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset=".4" stop-color="#fff" stop-opacity=".32"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>' +
-      '<clipPath id="c"><circle cx="50" cy="50" r="50"/></clipPath></defs><g clip-path="url(#c)">' +
-      (over ? '' : '<rect width="100" height="100" fill="url(#b)"/>' + ORN_PAT[((style | 0) % ORN_PAT.length + ORN_PAT.length) % ORN_PAT.length]()) +
-      '<path d="M-2 33Q50 43 102 33V56Q50 68 -2 56Z" fill="' + band + '" fill-opacity="' + (over ? '.8' : '.9') + '"/>' +
-      '<path d="M-2 33Q50 43 102 33" fill="none" stroke="#f3d98a" stroke-width="1.5"/><path d="M-2 56Q50 68 102 56" fill="none" stroke="#f3d98a" stroke-width="1.5"/>' +
-      '<rect width="100" height="100" fill="url(#r)"/>' +
-      '<ellipse cx="32" cy="25" rx="21" ry="13" fill="url(#h)" transform="rotate(-30 32 25)"/><ellipse cx="27" cy="20" rx="5" ry="2.6" fill="#fff" fill-opacity=".9" transform="rotate(-30 27 20)"/>' +
-      '<path d="M22 86Q50 98 78 86" fill="none" stroke="#fff" stroke-opacity=".16" stroke-width="3.5" stroke-linecap="round"/>' +
+    const over = style < 0;
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><defs>' +
+      '<radialGradient id="b" cx="38%" cy="30%" r="84%"><stop offset="0" stop-color="' + hexTone(c[0], .34) + '"/><stop offset=".26" stop-color="' + c[0] + '"/><stop offset=".62" stop-color="' + c[1] + '"/><stop offset="1" stop-color="' + hexTone(c[2], -.45) + '"/></radialGradient>' +
+      '<radialGradient id="g" cx="62%" cy="92%" r="48%"><stop offset="0" stop-color="' + hexTone(c[0], .3) + '" stop-opacity=".55"/><stop offset="1" stop-color="' + c[0] + '" stop-opacity="0"/></radialGradient>' +
+      '<radialGradient id="r"><stop offset=".52" stop-color="#000" stop-opacity="0"/><stop offset=".86" stop-color="#000" stop-opacity=".32"/><stop offset="1" stop-color="#000" stop-opacity=".62"/></radialGradient>' +
+      '<radialGradient id="n"><stop offset="0" stop-color="#000" stop-opacity="' + (over ? '.62' : '.46') + '"/><stop offset=".65" stop-color="#000" stop-opacity="' + (over ? '.34' : '.2') + '"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>' +
+      '<linearGradient id="w" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset="1" stop-color="#fff" stop-opacity=".1"/></linearGradient>' +
+      '<filter id="s" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.4"/></filter>' +
+      '<filter id="s2" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="6"/></filter>' +
+      '<filter id="gl" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="1.2" numOctaves="2" seed="7"/><feColorMatrix values="0 0 0 0 1 0 0 0 0 .96 0 0 0 0 .74 0 0 0 12 -6.5"/></filter>' +
+      '<clipPath id="c"><circle cx="100" cy="100" r="99.5"/></clipPath></defs><g clip-path="url(#c)">' +
+      (over ? '' : '<rect width="200" height="200" fill="url(#b)"/><rect width="200" height="200" fill="url(#g)"/>' + ORN_PAT[((style | 0) % ORN_PAT.length + ORN_PAT.length) % ORN_PAT.length]()) +
+      '<ellipse cx="100" cy="101" rx="112" ry="36" fill="url(#n)"/>' +
+      '<rect width="200" height="200" fill="url(#r)"/>' +
+      '<circle cx="100" cy="100" r="96" fill="none" stroke="#fff" stroke-opacity=".22" stroke-width="2.4" filter="url(#s)"/>' +
+      '<ellipse cx="104" cy="34" rx="64" ry="20" fill="#fff" fill-opacity=".17" filter="url(#s2)"/>' +
+      '<path d="M34 78Q38 42 76 26Q58 48 52 82Z" fill="url(#w)" filter="url(#s)" opacity=".9"/>' +
+      '<ellipse cx="57" cy="38" rx="9.500" ry="5" fill="#fff" fill-opacity=".96" transform="rotate(-32 57 38)"/>' +
+      '<path d="M146 156Q170 134 177 102" fill="none" stroke="#fff" stroke-opacity=".3" stroke-width="5" stroke-linecap="round" filter="url(#s)"/>' +
       '</g></svg>';
     return 'url("data:image/svg+xml,' + encodeURIComponent(svg) + '")';
   };
@@ -284,8 +295,10 @@ window.App = (function () {
     .sheet-head{padding-top:22px}
     .sheet-head h2{font-size:23px}
     .sheet-back.under{visibility:hidden}
-    .bname{text-shadow:0 1px 3px rgba(0,0,0,.8);color:#fff8e6}
-    .ball{box-shadow:0 calc(var(--size)*.1) calc(var(--size)*.22) rgba(0,0,0,.5)}
+    .bname{font-style:italic;font-weight:700;font-size:calc(var(--size)*.2);letter-spacing:.005em;color:#fffaf0;text-shadow:0 1px 2px rgba(0,0,0,.75),0 0 calc(var(--size)*.08) rgba(0,0,0,.55)}
+    .ball{box-shadow:0 calc(var(--size)*.09) calc(var(--size)*.2) rgba(0,0,0,.55)}
+    .cap{width:calc(var(--size)*.27);height:calc(var(--size)*.2);border-radius:0;margin-bottom:calc(var(--size)*-.05);background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 44'%3E%3Cdefs%3E%3ClinearGradient id='m' x1='0' x2='1'%3E%3Cstop offset='0' stop-color='%23705216'/%3E%3Cstop offset='.3' stop-color='%23fbe9ae'/%3E%3Cstop offset='.52' stop-color='%23d2a544'/%3E%3Cstop offset='.78' stop-color='%23f1d98c'/%3E%3Cstop offset='1' stop-color='%23604511'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='30' cy='9' r='6.500' fill='none' stroke='%23e6c668' stroke-width='2'/%3E%3Cpath d='M12 38V22Q12 16 18 16H42Q48 16 48 22V38Q45 43 42 38Q39 43 36 38Q33 43 30 38Q27 43 24 38Q21 43 18 38Q15 43 12 38Z' fill='url(%23m)'/%3E%3Cg stroke='%235a3f0e' stroke-opacity='.35' stroke-width='1'%3E%3Cpath d='M18 17V38M24 16V38M30 16V38M36 16V38M42 17V38'/%3E%3C/g%3E%3Cpath d='M13 22Q13 17 18 17H42Q47 17 47 22' fill='none' stroke='%23fff6d0' stroke-opacity='.8' stroke-width='1'/%3E%3C/svg%3E") center/100% 100% no-repeat}
+    .cap::before{display:none}
     .who-orn{display:flex;align-items:center;gap:12px;width:100%;margin-top:10px;padding:10px 14px;border-radius:16px;text-align:left;background:#7d1727;border:1px solid #b33247}
     .who-orn:active{transform:scale(.98)}
     .who-orn-b{width:38px;height:38px;border-radius:50%;flex:none;background:radial-gradient(circle at 30% 26%,rgba(255,255,255,.95) 0,rgba(255,255,255,.4) 7%,rgba(255,255,255,0) 22%),repeating-linear-gradient(135deg,rgba(255,255,255,.3) 0 7%,rgba(255,255,255,0) 7% 19%),radial-gradient(circle at 38% 32%,#ffe08a,#d49a1c 58%,#6b4a06);box-shadow:inset -3px -4px 8px rgba(0,0,0,.35)}
