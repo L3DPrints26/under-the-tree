@@ -60,6 +60,14 @@
   const host = u => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return 'link'; } };
   const fixUrl = u => { u = (u || '').trim(); return u && !/^https?:\/\//i.test(u) ? 'https://' + u : u; };
   const firstPhoto = it => (it.photos || []).map(A.photos.src).find(Boolean) || '';
+  /* a photo in a frame: the whole photo, never cropped, and never stretched past twice its real pixels
+     (that is what made small photos blurry). A soft blurred copy fills whatever space is left. */
+  const photoBox = src => '<img class="pbg" src="' + esc(src) + '" alt="" aria-hidden="true"><img class="pfg" src="' + esc(src) + '" alt="" onload="App.fitPhoto(this)">';
+  A.fitPhoto = img => {
+    const box = img.parentNode && img.parentNode.getBoundingClientRect(); if (!box || !box.width || !img.naturalWidth) return;
+    const k = Math.min(box.width / img.naturalWidth, box.height / img.naturalHeight, 2 / Math.min(3, window.devicePixelRatio || 1));
+    img.style.width = Math.round(img.naturalWidth * k) + 'px'; img.style.height = Math.round(img.naturalHeight * k) + 'px';
+  };
   const badges = it => (it.top ? '<span class="chip gold">' + A.icon('star') + 'Most wanted</span>' : '') + (it.santa ? '<span class="chip red">' + A.icon('hat') + 'From Santa</span>' : '');
 
   /* picks are private: only the person who made them sees them, plus anyone they chose to share with.
@@ -82,7 +90,9 @@
     .fold summary small.set{color:#5fe3a1}
     /* the wish photo always shows whole, never cropped or blown up */
     .gal>*{min-width:0;min-height:0;overflow:hidden}
-    .gal img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+    .wpic img.pbg,.gal img.pbg{position:absolute;inset:-12%;width:124%;height:124%;max-width:none;object-fit:cover;filter:blur(16px) brightness(.5)}
+    .wpic img.pfg,.gal img.pfg{position:absolute;inset:0;margin:auto;width:auto;height:auto;max-width:100%;max-height:100%;object-fit:contain;border-radius:6px}
+    body.low .wpic img.pbg,body.low .gal img.pbg{filter:brightness(.35)}
     @media (max-width:520px){.phead{gap:8px}.phead>.avatar{display:none}.phead .ttl .h1{font-size:clamp(19px,5.5vw,28px)}.phead .btn{padding:0 12px;gap:6px}}
     .wcard.is-got .wpic img,.wcard.is-got .wpic .ph{filter:grayscale(1);opacity:.45}
     .wcard.is-got .wtitle,.wcard.is-got .wprice,.wcard.is-got .wwhy{opacity:.5}
@@ -94,7 +104,7 @@
     const act = mine ? '<button class="btn sm" data-edit="' + it.id + '">' + A.icon('pencil', 16) + 'Edit</button><button class="btn sm' + (it.got ? ' green' : '') + '" data-got="' + it.id + '">' + A.icon('check', 16) + (it.got ? 'Got it' : 'I got this') + '</button>'
       : '<button class="btn sm' + (mp ? ' primary' : '') + '" data-plan="' + it.id + '">' + A.icon(mp ? 'check' : 'lock', 16) + (mp ? PLAN[mp] : 'Add to my picks') + '</button>';
     return '<article class="wcard' + (it.top ? ' is-top' : '') + (it.got ? ' is-got' : '') + '" data-id="' + it.id + '" style="--c2:' + p.c[1] + ';--c3:' + p.c[2] + '">' +
-      '<div class="wpic">' + (src ? '<img src="' + esc(src) + '" alt="" loading="lazy">' : A.icon(it.icon || 'gift', 64, 'ph')) +
+      '<div class="wpic">' + (src ? photoBox(src) : A.icon(it.icon || 'gift', 64, 'ph')) +
       '<div class="wbadges">' + (it.got ? '<span class="chip green">' + A.icon('check') + (mine ? 'You got it' : esc(who) + ' got this') + '</span>' : badges(it)) + '</div>' + (n > 1 ? '<span class="wcount">' + A.icon('photo', 14) + n + '</span>' : '') + '</div>' +
       '<div class="wbody"><h3 class="wtitle">' + esc(it.name) + '</h3>' + (it.price ? '<div class="wprice">' + esc(it.price) + '</div>' : '') +
       ((it.why && it.why[0]) || it.note ? '<p class="wwhy">' + esc((it.why && it.why[0]) || it.note) + '</p>' : '') +
@@ -173,7 +183,7 @@
       : '<button class="btn' + (mp ? ' primary' : '') + '" data-plan>' + A.icon(mp ? 'check' : 'lock', 18) + (mp ? PLAN[mp] : 'Add to my picks') + '</button>';
     return A.ui.sheet({
       title: mine ? 'Your wish' : A.poss(who) + ' wish', wide: true,
-      html: '<div class="gal">' + (pics.length ? pics.map(s => '<div><img src="' + esc(s) + '" alt=""></div>').join('') : '<div>' + A.icon(it.icon || 'gift', 90, 'ph') + '</div>') + '</div>' +
+      html: '<div class="gal">' + (pics.length ? pics.map(s => '<div>' + photoBox(s) + '</div>').join('') : '<div>' + A.icon(it.icon || 'gift', 90, 'ph') + '</div>') + '</div>' +
         (pics.length > 1 ? '<p class="muted small center" style="margin-top:6px">Swipe for ' + pics.length + ' photos</p>' : '') +
         '<h3 class="d-title">' + esc(it.name) + '</h3>' + (it.price ? '<div class="d-price">' + esc(it.price) + '</div>' : '') +
         (it.top || it.santa ? '<div class="row gap-s wrap" style="margin-top:10px">' + badges(it) + '</div>' : '') +
