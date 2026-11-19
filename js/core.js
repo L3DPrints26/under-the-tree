@@ -227,6 +227,35 @@ window.App = (function () {
     .who-btn>span:last-child{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .who-plus{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;border:1.5px dashed var(--line2);color:var(--muted)}
     .who-row{margin-top:12px}
+    .mu{display:flex;flex-direction:column;gap:14px}
+    .mu-a,.mu-b{display:flex;flex-direction:column;gap:10px;min-width:0}
+    .mu-hero{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:84px;padding:14px 18px;border-radius:20px;background:var(--gold);color:var(--gold-ink);text-align:left}
+    .mu-hero:active,.mu-sq:active,.mu-pill:active,.mu-join:active,.mu-dot:active .mu-c{transform:scale(.97)}
+    .mu-hero-t b{display:block;font-family:var(--display);font-size:22px;font-weight:600;line-height:1.1}
+    .mu-hero-t small{display:block;font-size:13px;font-weight:500;opacity:.8;margin-top:3px}
+    .mu-code{font-family:var(--display);font-weight:600;font-size:clamp(15px,4.4vw,19px);letter-spacing:.06em;background:rgba(17,26,46,.12);border-radius:10px;padding:7px 10px;white-space:nowrap}
+    .mu-two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .mu-sq{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-height:86px;padding:12px 14px;border-radius:18px;text-align:left;border:1px solid transparent}
+    .mu-sq svg{margin-bottom:6px}
+    .mu-sq b{font-weight:600;font-size:16px;color:#fff}
+    .mu-sq small{font-size:13px}
+    .mu-sq.blue{background:#15336a;border-color:#2c58ab}.mu-sq.blue svg{color:#8cc4ff}.mu-sq.blue small{color:#b9d4f5}
+    .mu-sq.purple{background:#2f2060;border-color:#5b41b3}.mu-sq.purple svg{color:#cbb0ff}.mu-sq.purple small{color:#d3c5f3}
+    .mu-h{font-size:13px;font-weight:600;color:var(--muted);margin-bottom:-2px}
+    .mu-pills{display:flex;gap:8px}
+    .mu-pill{flex:1.3;display:flex;align-items:center;justify-content:center;gap:7px;min-height:46px;border-radius:999px;font-weight:600;font-size:15px}
+    .mu-pill.green{background:#10603f;color:#d2f7e3}
+    .mu-pill.red{background:#8a1a2c;color:#ffe0e4}
+    .mu-pill.line{flex:.8;background:transparent;border:1.5px solid var(--line2);color:#fff}
+    .mu-join{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border-radius:12px;border:1.5px dashed rgba(255,255,255,.38);font-weight:600;font-size:14.5px;color:#e6edf7}
+    .mu-round{display:flex;justify-content:space-around;gap:8px}
+    .mu-dot{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:84px}
+    .mu-c{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:var(--surface2);border:1.5px solid var(--line2);color:#fff;background-size:cover;background-position:center}
+    .mu-photo{border-color:rgba(255,255,255,.55)}
+    .mu-dot.on .mu-c{background:var(--gold);border-color:var(--gold);color:var(--gold-ink)}
+    .mu-dot small{font-size:13px;font-weight:500;color:#dfe7f3;text-align:center;line-height:1.2}
+    .mu-dot small b{font-weight:700;color:var(--gold)}
+    @media (orientation:landscape) and (max-height:480px){.mu{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}.mu-hero{min-height:64px;padding:10px 14px}.mu-hero-t b{font-size:18px}.mu-sq{min-height:70px;padding:9px 12px}.mu-sq svg{margin-bottom:2px}.mu-c{width:46px;height:46px}.mu-pill{min-height:40px}.mu-join{min-height:38px}.mu-b{gap:8px}}
     .mn-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
     .mn-tile{display:flex;align-items:center;gap:10px;min-height:56px;padding:8px 10px;border-radius:14px;background:var(--surface2);border:1px solid var(--line);text-align:left;min-width:0}
     .mn-tile:active{transform:scale(.98)}
@@ -328,13 +357,11 @@ window.App = (function () {
     ui.sheet({
       title: 'Settings', cls: 'set',
       html: '<label class="switch"><span class="s-text"><b>School mode</b><small>Shows Dad and Mom instead of Daddy and Mommy. Only on this device.</small></span><input type="checkbox" id="setSchool"' + (school ? ' checked' : '') + '></label>' +
-        (App.lock && App.lock.on() && ME ? '<div class="row gap" style="margin:4px 0 6px"><button class="btn sm grow" id="setPin">' + App.icon('lock', 16) + (App.lock.hasPin(ME) ? 'Change my PIN' : 'Add a PIN') + '</button><button class="btn sm grow" id="setFace" hidden></button></div>' : '') +
+        (App.lock && App.lock.on() && ME ? '<button class="btn sm block" id="setPin" style="margin:4px 0 6px">' + App.icon('lock', 16) + 'Sign-in options</button>' : '') +
         (bgs.length ? '<span class="label" style="margin-top:10px">Background</span><div class="bg-grid">' + bgs.map(b => '<button class="bg-opt' + (b.id === cur ? ' on' : '') + '" data-bg="' + b.id + '" style="background-image:url(' + b.thumb + ')"><span>' + App.esc(b.name) + '</span></button>').join('') + '</div>' : ''),
       onMount(el) {
         $('#setSchool', el).onchange = e => App.school.set(e.target.checked);
-        const pb = $('#setPin', el), fb = $('#setFace', el);
-        if (pb) pb.onclick = () => App.lock.changePin();
-        if (fb) { const lab = () => { fb.innerHTML = App.icon('eye', 16) + (App.lock.faceOn(ME) ? 'Face ID is on' : 'Use Face ID here'); }; App.lock.faceReady().then(ok => { if (!ok) return; fb.hidden = false; lab(); fb.onclick = () => App.lock.faceToggle().then(on => { lab(); ui.toast(on ? 'Done. This phone can sign you in.' : 'Face ID is off on this phone.'); }, () => ui.toast('That did not turn on.')); }); }
+        const pb = $('#setPin', el); if (pb) pb.onclick = () => App.lock.optionsSheet();
         $$('.bg-opt', el).forEach(b => b.onclick = () => { App.scene.setBackground(b.dataset.bg); $$('.bg-opt', el).forEach(x => x.classList.toggle('on', x === b)); });
       }
     });
@@ -344,20 +371,31 @@ window.App = (function () {
      One place for everything that is not a wishlist: groups, invites, people, background, school mode, PIN. */
   ui.menu = () => {
     const C = App.cloud, inGroup = !!App.space() && !!C, g = inGroup ? (C.groups().find(x => x.id === App.space()) || {}) : {};
-    const tile = (id, icon, label, sub) => '<button class="mn-tile" id="' + id + '"><span class="mn-ic">' + App.icon(icon, 22) + '</span><span class="mn-tx"><b>' + label + '</b>' + (sub ? '<small>' + sub + '</small>' : '') + '</span></button>';
+    const bgs = App.scene && App.scene.backgrounds ? App.scene.backgrounds() : [], bg = bgs.find(x => x.id === App.scene.background()) || bgs[0];
+    const on = App.online().length, lockOn = App.lock && App.lock.on() && ME;
     ui.sheet({
       title: inGroup ? (g.name || 'Menu') : 'Menu', cls: 'menu',
-      html: '<div class="mn-grid">' +
-        (inGroup ? tile('mnInvite', 'link', 'Invite people', 'Code ' + C.pretty(App.space())) + tile('mnPeople', 'users', 'People', App.names.length + ' in this group') + tile('mnGroups', 'swap', 'My groups', 'Switch or leave') : '') +
-        (C ? tile('mnFamily', 'tree', 'Start a family group') + tile('mnFriends', 'heart', 'Start a friend group') + tile('mnJoin', 'plus', 'Join with a code') + tile('mnMore', 'more', 'More kinds of groups') : '') +
-        tile('mnBg', 'photo', 'Background', 'Pick a photo') + tile('mnSchool', 'book', 'School mode', school ? 'On' : 'Off') +
-        (App.lock && App.lock.on() && ME ? tile('mnPin', 'lock', 'PIN and Face ID', App.lock.hasPin(ME) ? 'PIN is set' : 'No PIN yet') : '') + '</div>',
+      html: '<div class="mu">' +
+        /* the main thing: getting people in. One wide gold banner with the code on it */
+        (inGroup ? '<div class="mu-a"><button class="mu-hero" id="mnInvite"><span class="mu-hero-t"><b>Invite people</b><small>Tap to send the code</small></span><span class="mu-code">' + C.pretty(App.space()) + '</span></button>' +
+          '<div class="mu-two"><button class="mu-sq blue" id="mnPeople">' + App.icon('users', 24) + '<b>People</b><small>' + App.names.length + ' here' + (on ? ', ' + on + ' online' : '') + '</small></button>' +
+          '<button class="mu-sq purple" id="mnGroups">' + App.icon('swap', 24) + '<b>My groups</b><small>Switch or leave</small></button></div></div>' : '') +
+        '<div class="mu-b">' +
+        /* starting or joining: pill buttons and one dashed bar */
+        (C ? '<p class="mu-h">Start something new</p><div class="mu-pills"><button class="mu-pill green" id="mnFamily">' + App.icon('tree', 18) + 'Family</button><button class="mu-pill red" id="mnFriends">' + App.icon('heart', 18) + 'Friends</button><button class="mu-pill line" id="mnMore">More</button></div>' +
+          '<button class="mu-join" id="mnJoin">' + App.icon('plus', 18) + 'Join a group with a code</button>' : '') +
+        /* things about this phone: round buttons */
+        '<p class="mu-h">On this phone</p><div class="mu-round">' +
+        '<button class="mu-dot" id="mnBg"><span class="mu-c mu-photo"' + (bg ? ' style="background-image:url(' + bg.thumb + ')"' : '') + '></span><small>Background</small></button>' +
+        '<button class="mu-dot' + (school ? ' on' : '') + '" id="mnSchool"><span class="mu-c">' + App.icon('book', 22) + '</span><small>School mode<b>' + (school ? ' on' : ' off') + '</b></small></button>' +
+        (lockOn ? '<button class="mu-dot" id="mnPin"><span class="mu-c">' + App.icon('lock', 22) + '</span><small>Sign-in</small></button>' : '') +
+        '</div></div></div>',
       onMount(el, close) {
-        const on = (id, fn) => { const b = $('#' + id, el); if (b) b.onclick = fn; };
-        on('mnInvite', () => C.invite()); on('mnPeople', () => { close(); C.peopleSheet(); }); on('mnGroups', () => { close(); C.groupSheet(); });
-        on('mnFamily', () => C.createSheet('family')); on('mnFriends', () => C.createSheet('friends')); on('mnJoin', () => C.joinSheet()); on('mnMore', () => C.moreKindsSheet());
-        on('mnBg', () => { close(); ui.settings(); }); on('mnPin', () => { close(); ui.settings(); });
-        on('mnSchool', () => { const want = !school; close(); App.school.set(want); if (want) ui.toast('School mode is on.'); });
+        const tap = (id, fn) => { const x = $('#' + id, el); if (x) x.onclick = fn; };
+        tap('mnInvite', () => C.invite()); tap('mnPeople', () => { close(); C.peopleSheet(); }); tap('mnGroups', () => { close(); C.groupSheet(); });
+        tap('mnFamily', () => C.createSheet('family')); tap('mnFriends', () => C.createSheet('friends')); tap('mnJoin', () => C.joinSheet()); tap('mnMore', () => C.moreKindsSheet());
+        tap('mnBg', () => { close(); ui.settings(); }); tap('mnPin', () => { close(); App.lock.optionsSheet(); });
+        tap('mnSchool', () => { const want = !school; close(); App.school.set(want); if (want) ui.toast('School mode is on.'); });
       }
     });
   };
