@@ -476,11 +476,17 @@ window.App = (function () {
     ui.sheet({
       title: 'Settings', cls: 'set',
       html: '<label class="switch"><span class="s-text"><b>School mode</b><small data-keep>Shows Dad and Mom instead of Daddy and Mommy. Only on this device.</small></span><input type="checkbox" id="setSchool"' + (school ? ' checked' : '') + '></label>' +
+        (App.tour ? '<label class="switch"><span class="s-text"><b>Bigger text</b><small data-keep>Makes the words larger. Only on this device.</small></span><input type="checkbox" id="setBig"' + (App.tour.big() ? ' checked' : '') + '></label>' : '') +
+        (App.remind && App.remind.native ? '<label class="switch"><span class="s-text"><b>Reminders</b><small data-keep>A nudge when the day\'s advent door is ready, and on Christmas Eve. Only on this device.</small></span><input type="checkbox" id="setRemind"' + (App.remind.on() ? ' checked' : '') + '></label>' : '') +
+        (App.tour ? '<button class="btn sm block" id="setTour" style="margin:4px 0 6px">' + App.icon('gift', 16) + 'How it works</button>' : '') +
         (App.lock && App.lock.on() && ME ? '<button class="btn sm block" id="setPin" style="margin:4px 0 6px">' + App.icon('lock', 16) + 'Your locks</button>' : '') +
         (bgs.length ? '<span class="label" style="margin-top:10px">Background</span><div class="bg-grid">' + bgs.map(b => '<button class="bg-opt' + (b.id === cur ? ' on' : '') + '" data-bg="' + b.id + '" style="background-image:url(' + b.thumb + ')"><span>' + App.esc(b.name) + '</span></button>').join('') + '</div>' : ''),
       onMount(el) {
         $('#setSchool', el).onchange = e => App.school.set(e.target.checked);
         const pb = $('#setPin', el); if (pb) pb.onclick = () => App.lock.optionsSheet();
+        const bg = $('#setBig', el); if (bg) bg.onchange = e => App.tour.setBig(e.target.checked);
+        const tr = $('#setTour', el); if (tr) tr.onclick = () => App.tour.show();
+        const rm = $('#setRemind', el); if (rm) rm.onchange = e => { const want = e.target.checked; App.remind.set(want).then(ok => { if (want && !ok) { rm.checked = false; ui.toast('Notifications are off for this app. Turn them on in Settings, then try again.'); } else ui.toast(want ? 'Reminders are on.' : 'Reminders are off.'); }); };
         $$('.bg-opt', el).forEach(b => b.onclick = () => { App.scene.setBackground(b.dataset.bg); $$('.bg-opt', el).forEach(x => x.classList.toggle('on', x === b)); });
       }
     });

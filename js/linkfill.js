@@ -25,7 +25,10 @@
     t = String(t || '').replace(/\s+/g, ' ').trim();
     t = t.replace(/^Amazon\.com\s*:\s*/i, '');
     if (/amazon\./i.test(host(url))) t = t.split(/\s:\s/)[0];
-    for (const sep of [' | ', ' - ', ' – ', ' — ', ' : ']) {
+    /* a bar almost always splits the product from the shop's own words, so keep what is in front of the first one */
+    const bar = t.indexOf(' | ');
+    if (bar >= 8) t = t.slice(0, bar);
+    for (const sep of [' - ', ' – ', ' — ', ' : ']) {
       const i = t.lastIndexOf(sep);
       if (i > 12 && t.length - i - sep.length <= 28) t = t.slice(0, i);
     }
@@ -35,7 +38,13 @@
     let p = meta(html, ['product:price:amount', 'og:price:amount', 'price']);
     if (!p) { const m = html.match(/"price"\s*:\s*"?(\d[\d,]*(?:\.\d{1,2})?)"?/); if (m) p = m[1]; }
     if (!p) { const m = html.match(/itemprop=["']price["'][^>]*>\s*\$?\s*(\d[\d,]*(?:\.\d{1,2})?)/i); if (m) p = m[1]; }
-    if (!p) { const m = html.match(/class=["']a-offscreen["']>\s*\$\s*(\d[\d,]*\.\d{2})/); if (m) p = m[1]; }          /* Amazon */
+    if (!p) {
+      /* Amazon: only the price in the main price box counts. A page has many other prices on it (other sellers,
+         bundles, things people also bought), and a wrong price is worse than no price. */
+      const m = html.match(/"priceAmount"\s*:\s*(\d+(?:\.\d{1,2})?)/);
+      if (m) p = m[1];
+      else { const at = html.search(/corePrice(?:Display)?_(?:desktop_|mobile_)?feature_div|id=["']corePrice/); if (at >= 0) { const m2 = html.slice(at, at + 6000).match(/class=["']a-offscreen["']>\s*\$\s*(\d[\d,]*\.\d{2})/); if (m2) p = m2[1]; } }
+    }
     if (!p) return '';
     const num = String(p).replace(/[^\d.,]/g, '').replace(/,(?=\d{3}\b)/g, '');
     if (!num || !(parseFloat(num) > 0)) return '';
@@ -58,12 +67,15 @@
     let img = meta(html, ['og:image:secure_url', 'og:image', 'twitter:image', 'twitter:image:src']), photo = '';
     if (!img) {
       /* Amazon keeps the big picture in the page's own data, and other shops list it in their product info */
-      const m = html.match(/"hiRes"\s*:\s*"(https:[^"]+)"/) || html.match(/data-old-hires=["'](https:[^"']+)["']/) || html.match(/id=["']landingImage["'][^>]*?src=["'](https:[^"']+)["']/) || html.match(/"image"\s*:\s*\[?\s*"(https:[^"]+)"/);
+      const m = html.match(/"hiRes"\s*:\s*"(https:[^"]+)"/) || html.match(/data-old-hires=["'](https:[^"']+)["']/) || html.match(/id=["'](?:landingImage|main-image)["'][^>]*?src=["'](https:[^"']+)["']/) ||
+        html.match(/data-a-dynamic-image=["']\{(?:&quot;|")(https:[^&"]+)/) || html.match(/"image"\s*:\s*\[?\s*"(https:[^"]+)"/) ||
+        (/amazon\./i.test(host(url)) ? html.match(/(https:\/\/m\.media-amazon\.com\/images\/I\/[A-Za-z0-9%+-]+\.(?:_[A-Za-z0-9_,]+_\.)?jpg)/) : null);
       if (m) img = decode(m[1]).replace(/\\\//g, '/');
     }
     if (img) {
       try {
         img = new URL(img, url).href;
+        if (/(?:media-amazon|ssl-images-amazon)\.com\/images\/I\//.test(img)) img = img.replace(/\._[^\/]*_\.(jpg|png)$/i, '.$1');      /* drop the size code: full-size picture */
         const r = await H.request({ method: 'GET', url: img, headers: { 'User-Agent': ua }, responseType: 'blob', connectTimeout: 12000, readTimeout: 15000 });
         if (typeof r.data === 'string' && r.data.length > 200) {
           const bin = atob(r.data.replace(/\s/g, '')), bytes = new Uint8Array(bin.length);
@@ -74,7 +86,7 @@
       } catch (e) { photo = ''; }
     }
     if (!name && !price && !photo) throw new Error('nothing');
-    return { name: name, price: price, photo: photo, link: url, host: host(url) };
+    return { name: name, price: price, photo: photo, link: url, host: host(url), src: img };
   }
 
   /* the box at the top of the wish form */
