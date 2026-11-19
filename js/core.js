@@ -315,6 +315,15 @@ window.App = (function () {
     .p-bar b{background:repeating-linear-gradient(135deg,#fff 0 6px,#ffd76a 6px 12px)}
     #player.loading .p-btn.main{animation:p-load 1s ease-in-out infinite alternate}
     @keyframes p-load{from{opacity:.45}to{opacity:1}}
+    /* sheets and buttons with a little more life */
+    .sheet{background:radial-gradient(130% 70% at 50% 0,rgba(66,104,178,.3),rgba(15,27,51,0) 62%),var(--surface)}
+    .sheet-head h2::before{content:"";display:inline-block;width:24px;height:22px;margin-right:9px;vertical-align:-3px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 22'%3E%3Cpath d='M11 13C6 14 2 11 1 6c4-1 8 1 10 7z' fill='%232a8a58'/%3E%3Cpath d='M13 13c5 1 9-2 10-7-4-1-8 1-10 7z' fill='%231f6f47'/%3E%3Cpath d='M11 13C8 9 9 4 12 1c3 3 4 8 1 12z' fill='%2334a36b'/%3E%3Ccircle cx='9.300' cy='16.500' r='3' fill='%23d7263d'/%3E%3Ccircle cx='14.700' cy='16.500' r='3' fill='%23c41e3a'/%3E%3Ccircle cx='12' cy='19' r='2.800' fill='%23e8404f'/%3E%3Ccircle cx='8.400' cy='15.600' r='.9' fill='%23fff' fill-opacity='.7'/%3E%3C/svg%3E") center/contain no-repeat}
+    .btn{background:linear-gradient(#1f3359,#172848);box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+    .btn.primary{background:linear-gradient(#f3d27c,#dcae45);box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 2px 0 #a17a1f}
+    .btn.danger{background:transparent;box-shadow:none}
+    .btn.ghost{background:transparent;box-shadow:none}
+    .btn.red{background:linear-gradient(#e03a52,#c41e3a);box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 2px 0 #7d1727}
+    .btn.green{background:linear-gradient(#22a06e,#16794f);box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 2px 0 #0c4a31}
     .who-row{margin-top:12px}
     .mu{display:flex;flex-direction:column;gap:14px}
     .mu-a,.mu-b{display:flex;flex-direction:column;gap:10px;min-width:0}
@@ -519,9 +528,11 @@ window.App = (function () {
           '<button class="btn grow" id="whoSet">' + App.icon('sliders', 18) + 'Settings</button></div>' +
           '<button class="btn ghost block who-switch" id="whoSwitch">Switch person</button>'
         : '<p class="muted">' + (!App.names.length ? 'Nobody is in this group yet. Add your name to start.' : locks ? 'Pick your name. A name with a lock is already taken.' : 'Pick your name. You can change your own list and see everyone else\'s.') + '</p>' +
-          '<div class="who-grid' + (App.names.length > 5 ? ' many' : '') + '">' +
-          App.names.map(n => '<button class="who-btn' + (n === ME ? ' on' : '') + '" data-n="' + App.esc(n) + '">' + (locks && App.lock.has(n) ? '<i class="who-lock">' + App.icon('lock', 14) + '</i>' : '') + ui.avatar(n, 64) + '<span>' + App.esc(n) + '</span></button>').join('') +
-          (App.cloud && App.names.length < App.maxPeople ? '<button class="who-btn who-add" id="whoAdd"><span class="who-plus">' + App.icon('plus', 26) + '</span><span>' + (App.names.length ? 'Add a name' : 'Add my name') + '</span></button>' : '') + '</div>',
+          (App.names.length ? '<div class="pp-rail"></div>' : '') + '<div class="pp-grid">' +
+          App.names.map((n, i) => { const p = App.person(n), size = App.names.length <= 4 ? 78 : App.names.length <= 8 ? 66 : 56, tag = n === ME ? 'You' : locks && App.lock.has(n) ? 'Taken' : 'Free';
+            return '<button class="orn pp-orn who-btn' + (n === ME ? ' me' : '') + '" data-name="' + App.esc(n) + '" data-n="' + App.esc(n) + '" style="--size:' + size + 'px;--c1:' + p.c[0] + ';--c2:' + p.c[1] + ';--c3:' + p.c[2] + ';--len:' + [8, 22, 12, 26, 6, 18][i % 6] + 'px;--dur:' + (4.2 + (i * 37 % 17) / 10).toFixed(1) + 's">' +
+              '<span class="hang"><span class="thread"></span><span class="cap"></span><span class="ball"><span class="bname" style="font-size:' + Math.max(10, Math.round(size * (n.length > 6 ? 1.25 / n.length : .19))) + 'px">' + App.esc(n) + '</span></span><span class="olabel">' + tag + '</span></span></button>'; }).join('') + '</div>' +
+          (App.cloud && App.names.length < App.maxPeople ? '<button class="mu-join" id="whoAdd" style="width:100%;margin-top:12px">' + App.icon('plus', 18) + (App.names.length ? 'My name is not here' : 'Add my name') + '</button>' : ''),
       onMount(el, close) {
         const pickMe = n => { const was = ME; App.setMe(n); close(); App.renderShell(); App.route(); if (was !== ME) ui.toast('Hi, ' + ME + '.'); };
         /* a name is only yours after its PIN (or after you make one for it) */

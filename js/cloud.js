@@ -34,9 +34,20 @@
     .gp-btns .btn{flex:1 1 140px}
     .gp-msg{min-height:20px;margin-top:10px;font-size:13.5px;color:#ff8a98}
     .gp-big{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+    /* the invite code sits on a paper gift tag */
+    .gp-tagwrap{display:flex;flex-direction:column;align-items:center;gap:8px;margin:4px 0 14px}
+    .gp-tag{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;width:min(100%,330px);padding:16px 18px 14px 44px;background:#f6eedd;color:#3a2a12;border-radius:10px;transform:rotate(-2deg);box-shadow:0 8px 20px rgba(0,0,0,.45);clip-path:polygon(0 50%,9% 0,100% 0,100% 100%,9% 100%);border:0}
+    .gp-tag::before{content:"";position:absolute;right:10px;top:8px;bottom:8px;width:6px;border-radius:3px;background:repeating-linear-gradient(180deg,#c9243a 0 7px,#f6eedd 7px 14px)}
+    .gp-tag:active{transform:rotate(-2deg) scale(.98)}
+    .gp-hole{position:absolute;left:22px;top:50%;width:13px;height:13px;margin-top:-7px;border-radius:50%;background:#0f1b33;box-shadow:0 0 0 3px #d9c9a3}
+    .gp-tag small{font-size:12.5px;font-weight:600;color:#7a6642}
+    .gp-tag .gp-code{color:#8a1a2c;font-size:clamp(24px,7.4vw,32px)}
+    .gp-tag em{font-style:normal;font-size:13px;font-weight:600;color:#5a4a2c}
     .pp-rail{height:5px;margin:8px 4px 0;border-radius:3px;background:linear-gradient(#2a8a58,#14573a);box-shadow:0 2px 0 rgba(0,0,0,.25)}
     .pp-grid{display:flex;flex-wrap:wrap;justify-content:space-around;gap:4px 6px;margin-top:-1px}
     .pp-orn{flex:0 0 22%;display:flex;justify-content:center}
+    .pp-orn.who-btn{background:none;border:0;padding:0;gap:0;border-radius:0}
+    .pp-orn.who-btn>span:last-child{overflow:visible;max-width:none}
     .pp-orn .bname{white-space:nowrap}
     .pp-orn .olabel{font-size:12.5px}
     .pp-note{font-size:13px;margin-top:12px;text-align:center}
@@ -288,9 +299,9 @@
     A.ui.sheet({
       title: 'Under the Tree', locked: true,
       html: '<p class="muted">Christmas wishlists for your family or your friends. Everyone adds what they want, and everyone can see it from their own phone.</p>' +
-        '<div class="gp-big"><button class="btn primary block" id="wFam">' + A.icon('tree', 18) + 'Start a family group</button>' +
-        '<button class="btn block" id="wFri">' + A.icon('heart', 18) + 'Start a friend group</button>' +
-        '<button class="btn block" id="wJoin">' + A.icon('users', 18) + 'Join with a code</button>' +
+        '<div class="so-string" style="margin-top:10px">' + ['#ff5a5a', '#ffd76a', '#6fe3a5', '#7cc4ff', '#ffffff', '#ff9ad1', '#ffd76a', '#6fe3a5', '#ff5a5a'].map((c, i) => '<i style="left:' + (4 + i * 11.5) + '%;top:' + (Math.sin(Math.PI * (4 + i * 11.5) / 100) * 78).toFixed(0) + '%;--c:' + c + ';animation-delay:' + (-i * .37).toFixed(2) + 's"></i>').join('') + '</div>' +
+        '<div class="gp-big"><div class="mu-pills"><button class="mu-pill green" id="wFam" style="min-height:54px">' + A.icon('tree', 20) + 'Family group</button><button class="mu-pill red" id="wFri" style="min-height:54px">' + A.icon('heart', 20) + 'Friend group</button></div>' +
+        '<button class="mu-join" id="wJoin" style="min-height:50px">' + A.icon('plus', 18) + 'I have a code to join</button>' +
         '<button class="btn ghost block" id="wMore">More kinds of groups</button></div>',
       onMount(el) { $('#wFam', el).onclick = () => createSheet('family'); $('#wFri', el).onclick = () => createSheet('friends'); $('#wJoin', el).onclick = () => joinSheet(); $('#wMore', el).onclick = () => moreKindsSheet(); }
     });
@@ -436,9 +447,8 @@
     }
     A.ui.sheet({
       title: mine.name, cls: 'gp',
-      html: '<div class="gp-cols"><div class="gp-card"><h3>Invite code</h3><span class="gp-code">' + pretty(cur) + '</span>' +
-        '<span class="gp-state' + (st === 'offline' ? '' : ' on') + '"><i></i>' + stText + '</span>' +
-        '<div class="gp-btns"><button class="btn primary" id="gpInvite">' + A.icon('link', 18) + 'Send an invite</button></div></div>' +
+      html: '<div class="gp-cols"><div class="gp-tagwrap"><button class="gp-tag" id="gpInvite"><i class="gp-hole"></i><small>Invite code</small><span class="gp-code">' + pretty(cur) + '</span><em>Tap to send it to someone</em></button>' +
+        '<span class="gp-state' + (st === 'offline' ? '' : ' on') + '"><i></i>' + stText + '</span></div>' +
         '<div><button class="gp-card gp-tap" id="gpPeople"><h3>People</h3><span class="gp-faces">' + A.names.map(n => A.ui.avatar(n, 30)).join('') + '</span><span class="gp-more">' + (A.online().length ? A.online().length + ' online now. ' : '') + 'Add or remove</span></button>' +
         '<div class="gp-btns gp-foot"><button class="btn sm" id="gpOther">' + A.icon('users', 16) + (nOther ? 'Other groups (' + nOther + ')' : 'Other groups') + '</button>' +
         '<button class="btn sm danger" id="gpLeave">Leave this group</button></div></div></div>',
