@@ -56,7 +56,7 @@
       title: 'Music',
       html: '<label class="switch"><span class="s-text"><b>Repeat this song</b><small>Off plays the next one when a song ends</small></span><input type="checkbox" id="mRepeat"' + (prefs.repeat ? ' checked' : '') + '></label>' +
         '<div class="row gap" style="min-height:44px">' + A.icon('music', 20) + '<input type="range" id="mVol" min="0" max="1" step="0.01" value="' + prefs.vol + '" style="flex:1;accent-color:#e9c46a" aria-label="Volume"></div>' +
-        '<p class="muted small" style="margin:2px 0 6px">Tap a song to play it. Tap its x to skip it on this phone.</p>' +
+        '<p class="muted small" style="margin:2px 0 6px">Tap a song to play it. Tap its x to skip it on this ' + App.dev + '.</p>' +
         '<div class="tracks two">' + TRACKS.map((t, i) => '<div class="trk"><button class="track" data-i="' + i + '"><span class="n">' + (i + 1) + '</span><span class="t">' + A.esc(t[0]) + '</span></button><button class="trk-x" data-x="' + i + '" aria-label="Skip or bring back ' + A.esc(t[0]) + '">' + A.icon('x', 15) + '</button></div>').join('') + '</div>' +
         '<p class="muted" style="margin-top:8px;font-size:12px">Music by Kevin MacLeod (incompetech.com), Creative Commons Attribution 4.0.</p>',
       onMount(el) {

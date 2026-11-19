@@ -14,13 +14,21 @@ window.App = (function () {
   App.uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
   App.poss = n => n + "'s";
   App.qs = new URLSearchParams(location.search);
+  /* what to call the thing in your hand: "this phone", "this iPad" or "this computer" */
+  App.dev = (function () {
+    const ua = navigator.userAgent || '', touch = (navigator.maxTouchPoints || 0) > 1;
+    if (/iPad/.test(ua) || (/Macintosh/.test(ua) && touch)) return 'iPad';
+    if (/iPhone|iPod|Android.*Mobile|Mobile.*Android/.test(ua)) return 'phone';
+    if (/Android/.test(ua)) return 'tablet';
+    return 'computer';
+  })();
   App.reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   App.canHover = matchMedia('(hover:hover)').matches;
   App.css = text => { const s = document.createElement('style'); s.textContent = text; document.head.appendChild(s); };
   App.shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; const t = a[i]; a[i] = a[j]; a[j] = t; } return a; };
 
   /* ---------- time (supports ?date=YYYY-MM-DD for testing) ---------- */
-  const T0 = Date.now(), DBG = App.qs.get('date');
+  const T0 = Date.now(), DBG = /^https?:$/.test(location.protocol) && /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? App.qs.get('date') : null;      /* test switch, this computer only */
   App.now = () => {
     if (DBG) { const d = new Date(DBG + 'T09:00:00'); if (!isNaN(d)) return new Date(d.getTime() + (Date.now() - T0)); }
     return new Date();
@@ -75,7 +83,7 @@ window.App = (function () {
       if (l && Object.keys(l).length) { obj = {}; Object.keys(l).forEach((n, i) => { obj[n] = { c: i % PALETTE.length, at: i + 1 }; }); App.store.set('people', obj); }
     }
     obj = obj || {};
-    const arr = Object.keys(obj).filter(n => obj[n]).map(n => ({ name: n, c: PALETTE[(obj[n].c | 0) % PALETTE.length], at: +obj[n].at || 0 }))
+    const arr = Object.keys(obj).filter(n => obj[n] && App.cleanName(n) === n).map(n => ({ name: n, c: PALETTE[(obj[n].c | 0) % PALETTE.length], at: +obj[n].at || 0 }))
       .sort((a, b) => a.at - b.at || (a.name < b.name ? -1 : 1));
     App.people.length = 0; App.names.length = 0;
     arr.forEach(p => { App.people.push(p); App.names.push(p.name); });
@@ -128,7 +136,7 @@ window.App = (function () {
        A photo this device has not downloaded yet is asked for once; the screen redraws when it arrives. */
     src(p) {
       if (!p) return '';
-      const v = p.url || cache.get(p.id);
+      const v = (p.url && /^https?:\/\//i.test(p.url) ? p.url : '') || cache.get(p.id);
       if (!v && p.id) App.emit('photo:miss', p.id);
       return v || '';
     },
@@ -140,6 +148,7 @@ window.App = (function () {
     },
     /* a photo that just came down from the group */
     have(id, dataURL) {
+      if (typeof dataURL !== 'string' || !/^data:image\/(png|jpe?g|webp|gif);base64,/.test(dataURL)) return;      /* only real pictures */
       cache.set(id, dataURL);
       if (db) try { db.transaction('photos', 'readwrite').objectStore('photos').put(dataURL, id); } catch (e) {}
       App.emit('photo', id);
@@ -450,39 +459,79 @@ window.App = (function () {
     });
   });
 
-  /* ---------- school mode ----------
-     For when someone might see your screen. This device shows Dad and Mom instead of Daddy and Mommy.
-     Only the words on this screen change: nothing is renamed, and nobody else sees a difference. */
-  let school = !!raw.get('school', false), schoolObs = null;
+  /* ---------- what you call people ----------
+     Each device can show its own name for anybody: Dad instead of Daddy, Nana instead of Grandma, or
+     anything typed in. Only the words on this screen change. Nothing is renamed in the group and nobody
+     else sees a difference. (This replaced "school mode", which only knew Dad and Mom.)
+     The watch app copies NICKS (scripts/gen-data.js), so keep it a plain list. */
+  const NICKS = [
+    { match: ['dad', 'daddy', 'dada', 'dadda', 'papa', 'pa', 'pop', 'pops', 'father'], top: ['Dad', 'Daddy', 'Papa'], more: ['Dada', 'Dadda', 'Pa', 'Pop', 'Pops', 'Father', 'Daddio'] },
+    { match: ['mom', 'mommy', 'mama', 'momma', 'ma', 'mum', 'mummy', 'mother'], top: ['Mom', 'Mommy', 'Mama'], more: ['Momma', 'Ma', 'Mum', 'Mummy', 'Mother', 'Mami'] },
+    { match: ['grandma', 'nana', 'granny', 'grammy', 'gran', 'nan', 'mimi', 'gigi', 'oma', 'abuela'], top: ['Grandma', 'Nana', 'Granny'], more: ['Grammy', 'Gran', 'Nan', 'Mimi', 'Gigi', 'Oma', 'Abuela'] },
+    { match: ['grandpa', 'gramps', 'grandad', 'granddad', 'pop-pop', 'papaw', 'opa', 'abuelo'], top: ['Grandpa', 'Gramps', 'Grandad'], more: ['Pop-pop', 'Papaw', 'Pops', 'Opa', 'Abuelo'] }
+  ];
+  let nick = raw.get('nick', null);
+  if (!nick || typeof nick !== 'object' || Array.isArray(nick)) { nick = raw.get('school', false) ? { Daddy: 'Dad', Mommy: 'Mom' } : {}; raw.set('nick', nick); }      /* school mode carries over as Dad and Mom */
+  let nickRe = null, nickObs = null;
+  const nickEsc = x => x.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+  const nickBuild = () => { const k = Object.keys(nick).filter(x => nick[x] && nick[x] !== x); nickRe = k.length ? new RegExp('\\b(' + k.map(nickEsc).join('|') + ')\\b', 'g') : null; };
   const swapWords = node => {
-    const v = node.nodeValue; if (!v || !/addy|ommy/i.test(v)) return;
+    const v = node.nodeValue; if (!nickRe || !v) return;
+    nickRe.lastIndex = 0; if (!nickRe.test(v)) return;
     const p = node.parentNode; if (p && (/^(SCRIPT|STYLE|TEXTAREA)$/.test(p.nodeName) || (p.closest && p.closest('[data-keep]')))) return;
-    const n = v.replace(/\bDaddy\b/g, 'Dad').replace(/\bdaddy\b/g, 'dad').replace(/\bDADDY\b/g, 'DAD').replace(/\bMommy\b/g, 'Mom').replace(/\bmommy\b/g, 'mom').replace(/\bMOMMY\b/g, 'MOM');
+    nickRe.lastIndex = 0; const n = v.replace(nickRe, m => nick[m] || m);
     if (n !== v) node.nodeValue = n;
   };
   const sweepWords = root => { const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); let n; while ((n = w.nextNode())) swapWords(n); };
-  function schoolStart() {
-    if (schoolObs || !document.body) return;
+  function nickStart() {
+    if (nickObs || !document.body || !nickRe) return;
     sweepWords(document.body);
-    schoolObs = new MutationObserver(list => { for (const m of list) { if (m.type === 'characterData') swapWords(m.target); else m.addedNodes.forEach(x => { if (x.nodeType === 3) swapWords(x); else if (x.nodeType === 1) sweepWords(x); }); } });
-    schoolObs.observe(document.body, { childList: true, subtree: true, characterData: true });
+    nickObs = new MutationObserver(list => { for (const m of list) { if (m.type === 'characterData') swapWords(m.target); else m.addedNodes.forEach(x => { if (x.nodeType === 3) swapWords(x); else if (x.nodeType === 1) sweepWords(x); }); } });
+    nickObs.observe(document.body, { childList: true, subtree: true, characterData: true });
   }
-  App.school = { on: () => school, set(v) { school = !!v; raw.set('school', school); if (school) schoolStart(); else location.reload(); } };
-  if (school) schoolStart();
+  App.nick = {
+    sets: NICKS,
+    of: n => (nick[n] && nick[n] !== n ? nick[n] : n),
+    suggest(n) { const k = String(n).toLowerCase(), cur = String(nick[n] || '').toLowerCase(); return NICKS.find(s => s.match.indexOf(k) >= 0 || (cur && s.match.indexOf(cur) >= 0)) || null; },
+    set(n, shown) {
+      shown = String(shown || '').replace(/[^\p{L}\p{N} '\-]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 14);
+      if (!shown || shown === n) delete nick[n]; else nick[n] = shown;
+      raw.set('nick', nick); location.reload();          /* the whole screen is redrawn with the new word */
+    },
+    /* pick what one person is called on this device */
+    sheet(name) {
+      const set = App.nick.suggest(name), cur = nick[name] && nick[name] !== name ? nick[name] : '';
+      const cols = ['green', 'red', 'gold'];
+      ui.sheet({
+        title: 'What do you call them?',
+        html: '<div data-keep><p class="muted">This is ' + App.esc(name) + ' in the group. Pick what you call them. It only changes this ' + App.dev + ', and nobody else sees it.</p>' +
+          (set ? '<div class="nk-top">' + set.top.map((w, i) => '<button class="nk-pill ' + cols[i % 3] + (w === (cur || name) ? ' on' : '') + '" data-nk="' + w + '">' + w + '</button>').join('') + '</div>' +
+            '<div class="nk-more">' + set.more.map(w => '<button class="nk-chip' + (w === cur ? ' on' : '') + '" data-nk="' + w + '">' + w + '</button>').join('') + '</div>' : '') +
+          '<label class="field" style="margin-top:12px"><span>' + (set ? 'Or type your own' : 'Type what you call them') + '</span><div class="linkrow"><input class="input" id="nkIn" maxlength="14" autocomplete="off" value="' + App.esc(cur) + '"><button class="btn primary" id="nkSave" style="flex:none">Use it</button></div></label>' +
+          (cur ? '<button class="btn ghost block" id="nkReset" style="margin-top:8px">Go back to ' + App.esc(name) + '</button>' : '') + '</div>',
+        onMount(el) {
+          $$('[data-nk]', el).forEach(b => b.onclick = () => App.nick.set(name, b.dataset.nk));
+          $('#nkSave', el).onclick = () => { const v = $('#nkIn', el).value.trim(); if (v) App.nick.set(name, v); };
+          $('#nkIn', el).onkeydown = e => { if (e.key === 'Enter') $('#nkSave', el).click(); };
+          const r = $('#nkReset', el); if (r) r.onclick = () => App.nick.set(name, '');
+        }
+      });
+    }
+  };
+  nickBuild();
+  if (nickRe) nickStart();
 
   /* ---------- settings (kept on this device) ---------- */
   ui.settings = () => {
     const bgs = App.scene && App.scene.backgrounds ? App.scene.backgrounds() : [], cur = bgs.length ? App.scene.background() : '';
     ui.sheet({
       title: 'Settings', cls: 'set',
-      html: '<label class="switch"><span class="s-text"><b>School mode</b><small data-keep>Shows Dad and Mom instead of Daddy and Mommy. Only on this device.</small></span><input type="checkbox" id="setSchool"' + (school ? ' checked' : '') + '></label>' +
-        (App.tour ? '<label class="switch"><span class="s-text"><b>Bigger text</b><small data-keep>Makes the words larger. Only on this device.</small></span><input type="checkbox" id="setBig"' + (App.tour.big() ? ' checked' : '') + '></label>' : '') +
+      html: (App.tour ? '<label class="switch"><span class="s-text"><b>Bigger text</b><small data-keep>Makes the words larger. Only on this device.</small></span><input type="checkbox" id="setBig"' + (App.tour.big() ? ' checked' : '') + '></label>' : '') +
         (App.remind && App.remind.native ? '<label class="switch"><span class="s-text"><b>Reminders</b><small data-keep>A nudge when the day\'s advent door is ready, and on Christmas Eve. Only on this device.</small></span><input type="checkbox" id="setRemind"' + (App.remind.on() ? ' checked' : '') + '></label>' : '') +
         (App.tour ? '<button class="btn sm block" id="setTour" style="margin:4px 0 6px">' + App.icon('gift', 16) + 'How it works</button>' : '') +
         (App.lock && App.lock.on() && ME ? '<button class="btn sm block" id="setPin" style="margin:4px 0 6px">' + App.icon('lock', 16) + 'Your locks</button>' : '') +
         (bgs.length ? '<span class="label" style="margin-top:10px">Background</span><div class="bg-grid">' + bgs.map(b => '<button class="bg-opt' + (b.id === cur ? ' on' : '') + '" data-bg="' + b.id + '" style="background-image:url(' + b.thumb + ')"><span>' + App.esc(b.name) + '</span></button>').join('') + '</div>' : ''),
       onMount(el) {
-        $('#setSchool', el).onchange = e => App.school.set(e.target.checked);
         const pb = $('#setPin', el); if (pb) pb.onclick = () => App.lock.optionsSheet();
         const bg = $('#setBig', el); if (bg) bg.onchange = e => App.tour.setBig(e.target.checked);
         const tr = $('#setTour', el); if (tr) tr.onclick = () => App.tour.show();
@@ -506,23 +555,26 @@ window.App = (function () {
           '<div class="mu-two"><button class="mu-sq blue" id="mnPeople">' + App.icon('users', 24) + '<b>People</b><small>' + App.names.length + ' here' + (on ? ', ' + on + ' online' : '') + '</small></button>' +
           '<button class="mu-sq purple" id="mnGroups">' + App.icon('swap', 24) + '<b>My groups</b><small>Switch or leave</small></button></div></div>' : '') +
         '<div class="mu-b">' +
+        /* the front page: what the app is and what changed */
+        '<button class="mu-about" id="mnAbout">' + App.icon('tree', 20) + '<span><b>About and what is new</b><small>' + (App.start && App.start.news[0] ? App.esc(App.start.news[0].title) : 'What the app does') + '</small></span>' + (App.start && App.start.unseen() ? '<em>New</em>' : '') + '</button>' +
         /* starting or joining: pill buttons and one dashed bar */
         (C ? '<p class="mu-h">Start something new</p><div class="mu-pills"><button class="mu-pill green" id="mnFamily">' + App.icon('tree', 18) + 'Family</button><button class="mu-pill red" id="mnFriends">' + App.icon('heart', 18) + 'Friends</button><button class="mu-pill line" id="mnMore">More</button></div>' +
           '<button class="mu-join" id="mnJoin">' + App.icon('plus', 18) + 'Join a group with a code</button>' : '') +
         /* things about this phone: round buttons */
-        '<p class="mu-h">On this phone</p><div class="mu-round">' +
+        '<p class="mu-h">On this ' + App.dev + '</p><div class="mu-round">' +
         '<button class="mu-dot" id="mnBg"><span class="mu-c mu-photo"' + (bg ? ' style="background-image:url(' + bg.thumb + ')"' : '') + '></span><small>Background</small></button>' +
-        '<button class="mu-dot' + (school ? ' on' : '') + '" id="mnSchool"><span class="mu-c">' + App.icon('book', 22) + '</span><small>School mode<b>' + (school ? ' on' : ' off') + '</b></small></button>' +
+        (C && App.space() ? '<button class="mu-dot" id="mnNames"><span class="mu-c">' + App.icon('tag', 22) + '</span><small>What I call people</small></button>' : '') +
         (lockOn ? '<button class="mu-dot" id="mnPin"><span class="mu-c">' + App.icon('lock', 22) + '</span><small>Locks</small></button>' : '') +
         (App.privacy && ME ? '<button class="mu-dot" id="mnPriv"><span class="mu-c">' + App.icon('eye', 22) + '</span><small>Who sees what</small></button>' : '') +
-        (App.safety ? '<button class="mu-dot" id="mnSafe"><span class="mu-c">' + App.icon('heart', 22) + '</span><small>Safety and rules</small></button>' : '') +
+        (App.safety ? '<button class="mu-dot" id="mnSafe"><span class="mu-c">' + App.icon('hand', 22) + '</span><small>Safety and rules</small></button>' : '') +
         '</div></div></div>',
       onMount(el, close) {
         const tap = (id, fn) => { const x = $('#' + id, el); if (x) x.onclick = fn; };
         tap('mnInvite', () => C.invite()); tap('mnPeople', () => { close(); C.peopleSheet(); }); tap('mnGroups', () => { close(); C.groupSheet(); });
-        tap('mnFamily', () => C.createSheet('family')); tap('mnFriends', () => C.createSheet('friends')); tap('mnJoin', () => C.joinSheet()); tap('mnMore', () => C.moreKindsSheet());
+        tap('mnFamily', () => { close(); App.go('#/start/family'); }); tap('mnFriends', () => { close(); App.go('#/start/friends'); }); tap('mnJoin', () => { close(); App.go('#/start/join'); }); tap('mnMore', () => { close(); App.go('#/start/new'); });
+        tap('mnAbout', () => { close(); App.go('#/start'); });
         tap('mnBg', () => { close(); ui.settings(); }); tap('mnPin', () => { close(); App.lock.optionsSheet(); }); tap('mnPriv', () => { close(); App.privacy.sheet(); }); tap('mnSafe', () => { close(); App.safety.sheet(); });
-        tap('mnSchool', () => { const want = !school; close(); App.school.set(want); if (want) ui.toast('School mode is on.'); });
+        tap('mnNames', () => { close(); C.peopleSheet(); ui.toast('Tap someone to pick what you call them.'); });
       }
     });
   };
@@ -592,7 +644,7 @@ window.App = (function () {
   let current = null, curName = '';
   App.parse = () => { const p = decodeURIComponent(location.hash.replace(/^#\/?/, '')).split('/').filter(Boolean); return { name: p[0] || 'home', args: p.slice(1) }; };
   App.route = () => {
-    if (!ME) return;
+    if (!ME && App.parse().name !== 'start') return;          /* the front page needs no group and no name */
     const r = App.parse(), known = TABS.some(t => t.id === r.name), root = $('#page');
     if (known && !App.pages[r.name]) App.pages[r.name] = { soon: true, render(el) { el.innerHTML = '<div class="empty">' + App.icon('clock', 48) + '<p>This part is still being built. Check back in a few minutes.</p></div>'; } };
     const name = App.pages[r.name] ? r.name : 'home', page = App.pages[name];
@@ -605,7 +657,7 @@ window.App = (function () {
     root.classList.add('enter');
   };
   App.go = hash => { if (location.hash === hash) App.route(); else location.hash = hash; };
-  App.refresh = () => { if (current && ME) { const r = App.parse(), root = $('#page'); if (current.leave) current.leave(); root.innerHTML = ''; current.render(root, r.args); } };
+  App.refresh = () => { if (current && (ME || curName === 'start')) { const r = App.parse(), root = $('#page'); if (current.leave) current.leave(); root.innerHTML = ''; current.render(root, r.args); } };
   App.currentPage = () => curName;
 
   /* ---------- following the group ----------

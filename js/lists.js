@@ -67,7 +67,9 @@
     });
   }
   const host = u => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return 'link'; } };
-  const fixUrl = u => { u = (u || '').trim(); return u && !/^https?:\/\//i.test(u) ? 'https://' + u : u; };
+  const fixUrl = u => { u = (u || '').trim(); return u && !/^https?:\/\//i.test(u) ? 'https://' + u.replace(/^[a-z][a-z0-9+.\-]*:/i, '') : u; };
+  /* a link saved by someone else is only shown if it is a plain web address */
+  const webOnly = list => (Array.isArray(list) ? list : []).filter(u => typeof u === 'string' && /^https?:\/\//i.test(u));
   const firstPhoto = it => (it.photos || []).map(A.photos.src).find(Boolean) || '';
   /* a photo in a frame: the whole photo, never cropped, and never stretched past twice its real pixels
      (that is what made small photos blurry). A soft blurred copy fills whatever space is left. */
@@ -128,7 +130,7 @@
       const who = args[0]; if (A.names.indexOf(who) < 0) { A.go('#/'); return; }
       const mine = who === A.me();
       if (!mine && A.safety && A.safety.hiddenPerson(who)) {
-        root.innerHTML = '<div class="phead"><a class="icon-btn solid" href="#/" aria-label="Back">' + A.icon('back') + '</a>' + A.ui.avatar(who, 40) + '<div class="ttl"><h1 class="h1">' + esc(A.poss(who)) + ' list</h1><p>Hidden on this phone</p></div></div>' +
+        root.innerHTML = '<div class="phead"><a class="icon-btn solid" href="#/" aria-label="Back">' + A.icon('back') + '</a>' + A.ui.avatar(who, 40) + '<div class="ttl"><h1 class="h1">' + esc(A.poss(who)) + ' list</h1><p>Hidden on this ' + App.dev + '</p></div></div>' +
           '<div class="empty">' + A.icon('eye', 54) + '<p>You hid this list. Nobody else can tell.</p><button class="btn primary" id="unhide">Show it again</button></div>';
         $('#unhide', root).onclick = () => { A.safety.hidePerson(who, false); A.refresh(); };
         return;
@@ -208,9 +210,9 @@
         (it.top || it.santa ? '<div class="row gap-s wrap" style="margin-top:10px">' + badges(it) + '</div>' : '') +
         (it.why && it.why.length ? '<div class="d-sec"><h3>Why ' + (mine ? 'I' : esc(who)) + ' would love it</h3><ul class="why">' + it.why.map(w => '<li>' + A.icon('check') + '<span>' + esc(w) + '</span></li>').join('') + '</ul></div>' : '') +
         (it.note ? '<div class="d-sec"><h3>Good to know</h3><p class="d-note">' + esc(it.note) + '</p></div>' : '') +
-        (it.links && it.links.length ? '<div class="d-sec"><h3>Where to get it</h3><div class="links">' + it.links.map(u => '<a class="btn block" href="' + esc(u) + '" target="_blank" rel="noopener">' + A.icon('link', 18) + 'Open ' + esc(host(u)) + '</a>').join('') + '</div></div>' : '') +
+        (webOnly(it.links).length ? '<div class="d-sec"><h3>Where to get it</h3><div class="links">' + webOnly(it.links).map(u => '<a class="btn block" href="' + esc(u) + '" target="_blank" rel="noopener">' + A.icon('link', 18) + 'Open ' + esc(host(u)) + '</a>').join('') + '</div></div>' : '') +
         (b && b.name ? '<div class="d-sec"><h3>Backup, if the first choice does not work out</h3><div class="backup"><div class="row gap">' + (bsrc ? '<img src="' + esc(bsrc) + '" alt="" style="width:64px;height:64px;border-radius:10px;object-fit:cover">' : '') + '<div class="grow"><b>' + esc(b.name) + '</b>' + (b.price ? '<span class="wprice">' + esc(b.price) + '</span>' : '') + '</div></div>' +
-          (b.note ? '<p class="d-note small" style="margin-top:8px">' + esc(b.note) + '</p>' : '') + (b.link ? '<a class="btn sm block" style="margin-top:10px" href="' + esc(b.link) + '" target="_blank" rel="noopener">' + A.icon('link', 16) + 'Open ' + esc(host(b.link)) + '</a>' : '') + '</div></div>' : '') +
+          (b.note ? '<p class="d-note small" style="margin-top:8px">' + esc(b.note) + '</p>' : '') + (webOnly([b.link]).length ? '<a class="btn sm block" style="margin-top:10px" href="' + esc(b.link) + '" target="_blank" rel="noopener">' + A.icon('link', 16) + 'Open ' + esc(host(b.link)) + '</a>' : '') + '</div></div>' : '') +
         (!mine && A.safety ? '<button class="sf-report" data-report>Report or hide this wish</button>' : '') +
         '<div class="sticky-acts">' + act + '</div>',
       onMount(el, close) {

@@ -74,7 +74,7 @@
   const pretty = id => (id.length === 10 ? id.slice(0, 5) + '-' + id.slice(5) : id);
   const cleanCode = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   const newCode = () => { const b = new Uint8Array(10); crypto.getRandomValues(b); return Array.from(b, x => LETTERS[x % 32]).join(''); };
-  const register = (id, name) => { const g = groups().filter(x => x.id !== id); g.push({ id, name }); saveGroups(g); };
+  const register = (id, name) => { const g = groups().filter(x => x.id !== id); g.push({ id, name: String(name || Group).replace(/[<>]/g, ).slice(0, 40) }); saveGroups(g); };
   const hasLocalLists = () => { const l = raw.get('lists', null); return !!(l && Object.keys(l).length); };
   /* inside the iPhone app there is no web address, so invites point at the public page */
   const inviteLink = id => (/^https?:$/.test(location.protocol) ? location.origin + location.pathname + '#/join/' + id : location.protocol === 'capacitor:' ? 'https://l3dprints26.github.io/under-the-tree/#/join/' + id : '');
@@ -399,19 +399,22 @@
     A.ui.sheet({
       title: 'People', cls: 'pp',
       html: '<div class="pp-rail"></div><div class="pp-grid">' + A.names.map(orn).join('') + '</div>' +
-        '<p class="muted pp-note">' + (org ? (boss ? 'You run this group. Tap someone to unlock their name or take them off.' : esc(org) + ' runs this group and can unlock a name or take someone off.') : 'A green dot means they have the app open.') + '</p>' +
+        '<p class="muted pp-note">' + 'Tap someone to pick what you call them. ' + (org ? (boss ? 'You run this group, so you can also unlock a name or take someone off.' : esc(org) + ' runs this group and can unlock a name or take someone off.') : 'A green dot means they have the app open.') + '</p>' +
         (A.names.length < A.maxPeople ? '<button class="mu-join" id="gpAdd" style="width:100%;margin-top:10px">' + A.icon('plus', 18) + 'Add a person</button>' : '') +
         (org && me === org && A.names.length > 1 ? '<button class="btn sm ghost block" id="gpHand" style="margin-top:8px">Let someone else run this group</button>' : ''),
       onMount(el, close) {
         const again = () => { close(); peopleSheet(); };
         const add = $('#gpAdd', el); if (add) add.onclick = () => addPersonSheet(again);
         $$('[data-p]', el).forEach(b => { b.onclick = () => {
-          const who = b.dataset.p; if (!boss || who === me) return;
+          const who = b.dataset.p; if (who === me) return;
+          /* everyone can pick what they call someone. Whoever runs the group can also unlock or remove them. */
+          if (!boss) { if (A.nick) A.nick.sheet(who); return; }
           const lockedNow = A.lock && A.lock.has(who);
           A.ui.sheet({ title: who,
-            html: '<div class="lk-stack">' + (lockedNow ? '<button class="btn block" id="ppUn">' + A.icon('lock', 18) + 'Unlock this name</button>' : '') + '<button class="btn danger block" id="ppRm">Take ' + esc(who) + ' off the group</button></div>' +
+            html: '<div class="lk-stack" data-keep>' + (A.nick ? '<button class="btn primary block" id="ppNick">' + A.icon('heart', 18) + 'What I call ' + esc(who) + '</button>' : '') + (lockedNow ? '<button class="btn block" id="ppUn">' + A.icon('lock', 18) + 'Unlock this name</button>' : '') + '<button class="btn danger block" id="ppRm">Take ' + esc(who) + ' off the group</button></div>' +
               '<p class="muted" style="font-size:13px;margin-top:10px">' + (lockedNow ? 'Unlock when the wrong person picked the name. Whoever picks it next gets it. ' : '') + 'Taking someone off keeps their wishes, and they come back if you add the same name again.</p>',
             onMount(s2, c2) {
+              const nk = $('#ppNick', s2); if (nk) nk.onclick = () => { c2(); A.nick.sheet(who); };
               const un = $('#ppUn', s2); if (un) un.onclick = () => { A.lock.reset(who); c2(); A.ui.toast('Unlocked.'); again(); };
               $('#ppRm', s2).onclick = () => { A.removePerson(who); c2(); again(); A.softRefresh(); };
             } });

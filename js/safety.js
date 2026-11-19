@@ -63,9 +63,9 @@
         '<p class="sf-foot" data-keep>A report shows your name to whoever runs the group. Something serious? <a href="' + LINKS.support + '" target="_blank" rel="noopener">Tell the people who make the app</a>.</p>',
       onMount(el, close) {
         $$('[data-why]', el).forEach(b => b.onclick = () => { why = b.dataset.why; $$('[data-why]', el).forEach(x => x.classList.toggle('on', x === b)); });
-        $('#sfReport', el).onclick = () => { report(who, id, why); close(); A.ui.toast('Reported, and hidden on this phone.'); A.refresh(); };
-        $('#sfHide', el).onclick = () => { hideWish(id, true); close(); A.ui.toast('Hidden on this phone.'); A.refresh(); };
-        $('#sfAll', el).onclick = () => { hidePerson(who, true); close(); A.ui.toast('Hidden on this phone.'); A.refresh(); };
+        $('#sfReport', el).onclick = () => { report(who, id, why); close(); A.ui.toast('Reported, and hidden on this ' + App.dev + '.'); A.refresh(); };
+        $('#sfHide', el).onclick = () => { hideWish(id, true); close(); A.ui.toast('Hidden on this ' + App.dev + '.'); A.refresh(); };
+        $('#sfAll', el).onclick = () => { hidePerson(who, true); close(); A.ui.toast('Hidden on this ' + App.dev + '.'); A.refresh(); };
       }
     });
   }
@@ -97,7 +97,7 @@
       if (label) rows.push('<div class="sf-hid"><span>' + esc(label) + '</span><button class="btn sm" data-sw="' + esc(id) + '">Show again</button></div>');
     });
     A.ui.sheet({
-      title: 'Hidden on this phone',
+      title: 'Hidden on this ' + App.dev + '',
       html: rows.length ? rows.join('') : '<p class="muted">Nothing is hidden.</p>',
       onMount(el, close) {
         const again = () => { close(); A.refresh(); hiddenSheet(); };
@@ -166,7 +166,7 @@
       title: 'Safety and rules',
       html: '<div class="sf-rules"><b>' + A.icon('heart', 18) + 'The rules</b><p>Be kind. Nothing mean, rude or not okay for kids. Anyone can report or hide a wish, and whoever runs the group can take a wish or a person off.</p></div>' +
         (iRun() ? row('sfReports', 'todo', 'Reports', 'Wishes people in this group reported', nr) : '') +
-        row('sfHidden', 'eye', 'Hidden on this phone', 'Wishes and lists you hid', nh) +
+        row('sfHidden', 'eye', 'Hidden on this ' + App.dev + '', 'Wishes and lists you hid', nh) +
         (A.me() && A.space() ? row('sfDelete', 'trash', 'Delete my stuff', 'Take everything of yours out of this group', 0, 'red') : '') +
         '<div class="sf-links" data-keep><a href="' + LINKS.privacy + '" target="_blank" rel="noopener">Privacy</a><a href="' + LINKS.terms + '" target="_blank" rel="noopener">Terms</a><a href="' + LINKS.support + '" target="_blank" rel="noopener">Help</a></div>',
       onMount(el, close) {

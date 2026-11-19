@@ -16,10 +16,10 @@
     var code = A.cloud && A.cloud.pendingJoin, fresh = !A.space() && !A.names.length;
     if (code && A.cloud.groups().some(function (g) { return g.id === code; })) { if (A.space() !== code) { A.store.raw.set('group', code); location.reload(); return; } code = ''; }
     /* test hook: ?auto=1 on an invite link joins without the extra tap */
-    if (code && A.qs.has('auto')) { A.cloud.join(code, A.qs.has('bring')).then(function () { location.hash = '#/'; location.reload(); }, function () { A.cloud.welcome(); A.cloud.joinSheet(code); }); return; }
-    if (fresh) { if (A.cloud) { A.cloud.welcome(); if (code) A.cloud.joinSheet(code); } return; }      /* brand new here: start or join a group */
+    if (code && A.qs.has('auto')) { A.cloud.join(code, A.qs.has('bring')).then(function () { location.hash = '#/'; location.reload(); }, function () { A.go('#/start/join/' + code); }); return; }
+    if (fresh) { location.hash = code ? '#/start/join/' + code : '#/start'; A.route(); return; }      /* brand new here: the front page, where you start or join a group */
     if (A.data) A.data.init();
     if (!A.me()) A.ui.who(true); else A.route();
-    if (code) A.cloud.joinSheet(code);
+    if (code) A.go('#/start/join/' + code);
   });
 })();
