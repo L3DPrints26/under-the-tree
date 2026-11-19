@@ -226,6 +226,11 @@ window.App = (function () {
     .who-btn.on{border-color:var(--gold)}
     .who-btn>span:last-child{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .who-plus{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;border:1.5px dashed var(--line2);color:var(--muted)}
+    /* every sheet is wrapped like a present: a candy-stripe ribbon along the top edge */
+    .sheet{position:relative;overflow:hidden}
+    .sheet::before{content:"";position:absolute;left:0;right:0;top:0;height:8px;z-index:2;background:repeating-linear-gradient(135deg,#c9243a 0 10px,#f4ecdc 10px 20px);box-shadow:0 1px 0 rgba(0,0,0,.28)}
+    .sheet-head{padding-top:22px}
+    .sheet-head h2{font-size:23px}
     .who-row{margin-top:12px}
     .mu{display:flex;flex-direction:column;gap:14px}
     .mu-a,.mu-b{display:flex;flex-direction:column;gap:10px;min-width:0}
@@ -337,7 +342,7 @@ window.App = (function () {
   let school = !!raw.get('school', false), schoolObs = null;
   const swapWords = node => {
     const v = node.nodeValue; if (!v || !/addy|ommy/i.test(v)) return;
-    const p = node.parentNode; if (p && /^(SCRIPT|STYLE|TEXTAREA)$/.test(p.nodeName)) return;
+    const p = node.parentNode; if (p && (/^(SCRIPT|STYLE|TEXTAREA)$/.test(p.nodeName) || (p.closest && p.closest('[data-keep]')))) return;
     const n = v.replace(/\bDaddy\b/g, 'Dad').replace(/\bdaddy\b/g, 'dad').replace(/\bDADDY\b/g, 'DAD').replace(/\bMommy\b/g, 'Mom').replace(/\bmommy\b/g, 'mom').replace(/\bMOMMY\b/g, 'MOM');
     if (n !== v) node.nodeValue = n;
   };
@@ -356,8 +361,8 @@ window.App = (function () {
     const bgs = App.scene && App.scene.backgrounds ? App.scene.backgrounds() : [], cur = bgs.length ? App.scene.background() : '';
     ui.sheet({
       title: 'Settings', cls: 'set',
-      html: '<label class="switch"><span class="s-text"><b>School mode</b><small>Shows Dad and Mom instead of Daddy and Mommy. Only on this device.</small></span><input type="checkbox" id="setSchool"' + (school ? ' checked' : '') + '></label>' +
-        (App.lock && App.lock.on() && ME ? '<button class="btn sm block" id="setPin" style="margin:4px 0 6px">' + App.icon('lock', 16) + 'Sign-in options</button>' : '') +
+      html: '<label class="switch"><span class="s-text"><b>School mode</b><small data-keep>Shows Dad and Mom instead of Daddy and Mommy. Only on this device.</small></span><input type="checkbox" id="setSchool"' + (school ? ' checked' : '') + '></label>' +
+        (App.lock && App.lock.on() && ME ? '<button class="btn sm block" id="setPin" style="margin:4px 0 6px">' + App.icon('lock', 16) + 'Your locks</button>' : '') +
         (bgs.length ? '<span class="label" style="margin-top:10px">Background</span><div class="bg-grid">' + bgs.map(b => '<button class="bg-opt' + (b.id === cur ? ' on' : '') + '" data-bg="' + b.id + '" style="background-image:url(' + b.thumb + ')"><span>' + App.esc(b.name) + '</span></button>').join('') + '</div>' : ''),
       onMount(el) {
         $('#setSchool', el).onchange = e => App.school.set(e.target.checked);
@@ -388,7 +393,7 @@ window.App = (function () {
         '<p class="mu-h">On this phone</p><div class="mu-round">' +
         '<button class="mu-dot" id="mnBg"><span class="mu-c mu-photo"' + (bg ? ' style="background-image:url(' + bg.thumb + ')"' : '') + '></span><small>Background</small></button>' +
         '<button class="mu-dot' + (school ? ' on' : '') + '" id="mnSchool"><span class="mu-c">' + App.icon('book', 22) + '</span><small>School mode<b>' + (school ? ' on' : ' off') + '</b></small></button>' +
-        (lockOn ? '<button class="mu-dot" id="mnPin"><span class="mu-c">' + App.icon('lock', 22) + '</span><small>Sign-in</small></button>' : '') +
+        (lockOn ? '<button class="mu-dot" id="mnPin"><span class="mu-c">' + App.icon('lock', 22) + '</span><small>Locks</small></button>' : '') +
         '</div></div></div>',
       onMount(el, close) {
         const tap = (id, fn) => { const x = $('#' + id, el); if (x) x.onclick = fn; };

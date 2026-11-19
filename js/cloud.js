@@ -34,6 +34,12 @@
     .gp-btns .btn{flex:1 1 140px}
     .gp-msg{min-height:20px;margin-top:10px;font-size:13.5px;color:#ff8a98}
     .gp-big{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+    .pp-rail{height:5px;margin:8px 4px 0;border-radius:3px;background:linear-gradient(#2a8a58,#14573a);box-shadow:0 2px 0 rgba(0,0,0,.25)}
+    .pp-grid{display:flex;flex-wrap:wrap;justify-content:space-around;gap:4px 6px;margin-top:-1px}
+    .pp-orn{flex:0 0 22%;display:flex;justify-content:center}
+    .pp-orn .bname{white-space:nowrap}
+    .pp-orn .olabel{font-size:12.5px}
+    .pp-note{font-size:13px;margin-top:12px;text-align:center}
     .gp-kinds{display:grid;grid-template-columns:1fr 1fr;gap:8px}
     .gp-kinds .btn{justify-content:flex-start;padding:0 12px}
     .gp-card .gp-code{display:block}
@@ -369,22 +375,33 @@
   }
   /* everyone in the group, with a way to add or take off a name */
   function peopleSheet() {
-    const me = A.me(), org = A.lock ? A.lock.organizer() : '', boss = !org || me === org;
+    const me = A.me(), org = A.lock ? A.lock.organizer() : '', boss = !org || me === org, n = A.names.length;
+    const size = n <= 4 ? 78 : n <= 8 ? 66 : 56, lens = [8, 22, 12, 26, 6, 18];
+    const orn = (name, i) => { const p = A.person(name), tag = name === me ? 'You' : name === org ? 'Runs this' : (A.lock && A.lock.has(name) ? 'Taken' : 'Not picked yet');
+      return '<button class="orn pp-orn' + (name === me ? ' me' : '') + '" data-name="' + esc(name) + '" data-p="' + esc(name) + '" style="--size:' + size + 'px;--c1:' + p.c[0] + ';--c2:' + p.c[1] + ';--c3:' + p.c[2] + ';--len:' + lens[i % lens.length] + 'px;--dur:' + (4.2 + (i * 37 % 17) / 10).toFixed(1) + 's">' +
+        '<span class="hang"><span class="thread"></span><span class="cap"></span><span class="ball"><span class="bname" style="font-size:' + Math.max(11, Math.round(size * (name.length > 7 ? 1.75 / name.length : .25))) + 'px">' + esc(name) + '</span></span><span class="olabel">' + tag + '</span></span></button>'; };
     A.ui.sheet({
-      title: 'People',
-      html: '<div class="gp-people">' + A.names.map(n => '<div class="gp-person">' + A.ui.avatar(n, 30) + '<b>' + esc(n) + '</b>' +
-        (n === org ? '<small>' + (n === me ? 'You run this' : 'Runs this') + '</small>' : n === me ? '<small>You</small>' : '') +
-        (boss && n !== me ? (A.lock && A.lock.has(n) ? '<button class="icon-btn" data-pin="' + esc(n) + '" aria-label="Unlock ' + esc(n) + '">' + A.icon('lock', 16) + '</button>' : '') +
-          '<button class="icon-btn" data-rm="' + esc(n) + '" aria-label="Remove ' + esc(n) + '">' + A.icon('x', 16) + '</button>' : '') + '</div>').join('') + '</div>' +
-        (org && !boss ? '<p class="muted" style="font-size:13px;margin-top:10px">' + esc(org) + ' runs this group and can unlock a name or take someone off.</p>' : '') +
-        (org && me === org && A.names.length > 1 ? '<button class="btn sm ghost block" id="gpHand" style="margin-top:10px">Let someone else run this group</button>' : '') +
-        (A.names.length < A.maxPeople ? '<button class="btn block" id="gpAdd" style="margin-top:12px">' + A.icon('plus', 16) + 'Add a person</button>' : ''),
+      title: 'People', cls: 'pp',
+      html: '<div class="pp-rail"></div><div class="pp-grid">' + A.names.map(orn).join('') + '</div>' +
+        '<p class="muted pp-note">' + (org ? (boss ? 'You run this group. Tap someone to unlock their name or take them off.' : esc(org) + ' runs this group and can unlock a name or take someone off.') : 'A green dot means they have the app open.') + '</p>' +
+        (A.names.length < A.maxPeople ? '<button class="mu-join" id="gpAdd" style="width:100%;margin-top:10px">' + A.icon('plus', 18) + 'Add a person</button>' : '') +
+        (org && me === org && A.names.length > 1 ? '<button class="btn sm ghost block" id="gpHand" style="margin-top:8px">Let someone else run this group</button>' : ''),
       onMount(el, close) {
-        const add = $('#gpAdd', el); if (add) add.onclick = () => addPersonSheet(() => { close(); peopleSheet(); });
-        $$('[data-pin]', el).forEach(b => { b.onclick = () => A.ui.confirm('Unlock ' + b.dataset.pin + '? Use this when the wrong person picked the name. Whoever picks it next gets it, and its PIN is cleared.', 'Unlock', true).then(yes => { if (yes) { A.lock.reset(b.dataset.pin); close(); peopleSheet(); A.ui.toast('Unlocked.'); } }); });
-        const ho = $('#gpHand', el); if (ho) ho.onclick = () => A.ui.sheet({ title: 'Who should run this group?', html: '<p class="muted">They will be the one who can unlock names and take people off.</p><div class="gp-kinds" style="margin-top:12px">' + A.names.filter(n => n !== me).map(n => '<button class="btn" data-ho="' + esc(n) + '">' + A.ui.avatar(n, 26) + esc(n) + '</button>').join('') + '</div>',
+        const again = () => { close(); peopleSheet(); };
+        const add = $('#gpAdd', el); if (add) add.onclick = () => addPersonSheet(again);
+        $$('[data-p]', el).forEach(b => { b.onclick = () => {
+          const who = b.dataset.p; if (!boss || who === me) return;
+          const lockedNow = A.lock && A.lock.has(who);
+          A.ui.sheet({ title: who,
+            html: '<div class="lk-stack">' + (lockedNow ? '<button class="btn block" id="ppUn">' + A.icon('lock', 18) + 'Unlock this name</button>' : '') + '<button class="btn danger block" id="ppRm">Take ' + esc(who) + ' off the group</button></div>' +
+              '<p class="muted" style="font-size:13px;margin-top:10px">' + (lockedNow ? 'Unlock when the wrong person picked the name. Whoever picks it next gets it. ' : '') + 'Taking someone off keeps their wishes, and they come back if you add the same name again.</p>',
+            onMount(s2, c2) {
+              const un = $('#ppUn', s2); if (un) un.onclick = () => { A.lock.reset(who); c2(); A.ui.toast('Unlocked.'); again(); };
+              $('#ppRm', s2).onclick = () => { A.removePerson(who); c2(); again(); A.softRefresh(); };
+            } });
+        }; });
+        const ho = $('#gpHand', el); if (ho) ho.onclick = () => A.ui.sheet({ title: 'Who should run this group?', html: '<p class="muted">They will be the one who can unlock names and take people off.</p><div class="gp-kinds" style="margin-top:12px">' + A.names.filter(x => x !== me).map(x => '<button class="btn" data-ho="' + esc(x) + '">' + A.ui.avatar(x, 26) + esc(x) + '</button>').join('') + '</div>',
           onMount(s2, c2) { $$('[data-ho]', s2).forEach(x => { x.onclick = () => { A.lock.handOver(x.dataset.ho); c2(); close(); A.ui.toast(x.dataset.ho + ' runs this group now.'); }; }); } });
-        $$('[data-rm]', el).forEach(b => { b.onclick = () => A.ui.confirm('Take ' + b.dataset.rm + ' off this group? Their wishes are kept and come back if you add the same name again.', 'Remove', true).then(yes => { if (yes) { A.removePerson(b.dataset.rm); close(); peopleSheet(); A.softRefresh(); } }); });
       },
       onClose() { A.softRefresh(); }
     });

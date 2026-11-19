@@ -27,6 +27,17 @@
     .lk-row small{display:block;font-size:12.5px;color:var(--muted)}
     .lk-row small.set{color:#5fe3a1}
     .lk-row .btn{flex:none}
+    .so-string{position:relative;height:26px;margin:14px 2px 0;border-bottom:2.5px solid #1d7449;border-radius:0 0 50% 50%/0 0 100% 100%}
+    .so-string i{position:absolute;width:9px;height:9px;margin:2px 0 0 -4px;border-radius:50%;background:var(--c);box-shadow:0 0 8px var(--c);animation:so-tw 2.6s ease-in-out infinite alternate}
+    @keyframes so-tw{from{opacity:.45}to{opacity:1}}
+    .so-row{display:flex;justify-content:space-around;align-items:flex-start;margin-top:-7px;min-height:158px}
+    .so-orn{flex:none}
+    .so-orn .bname{white-space:nowrap}
+    .so-orn.off .ball{filter:grayscale(.8) brightness(.62)}
+    .so-orn.off .olabel{background:rgba(6,14,30,.8);color:#dfe7f3}
+    .so-orn .olabel{font-size:13px;padding:3px 10px}
+    .so-orn[disabled]{opacity:.55}
+    .so-foot{margin-top:6px;font-size:13px;color:var(--muted);text-align:center;text-wrap:balance}
     .who-btn{position:relative}
     .who-lock{position:absolute;right:8px;top:8px;color:var(--gold);display:grid}
   `);
@@ -183,33 +194,43 @@
       });
     });
   }
-  /* every way to sign in, in one place. Each one is optional. */
+  /* every way to sign in, hung up like the ornaments on the home screen. Each one is optional:
+     a lit ornament is on, a dim one is off, and tapping one adds it or changes it. */
   function optionsSheet() {
     const me = A.me(); if (!me) return;
-    const row = (icon, title, sub, set, btns) => '<div class="lk-row"><span class="lk-ic">' + A.icon(icon, 20) + '</span><span class="grow"><b>' + title + '</b><small' + (set ? ' class="set"' : '') + '>' + sub + '</small></span>' + btns + '</div>';
-    const two = k => hasKind(me, k) ? '<button class="btn sm" data-add="' + k + '">Change</button><button class="btn sm ghost" data-del="' + k + '">Remove</button>' : '<button class="btn sm primary" data-add="' + k + '">Add</button>';
+    const orn = (id, word, c, len, on, note, fs) => '<button class="orn so-orn' + (on ? ' me' : ' off') + '" id="' + id + '" style="--size:86px;--c1:' + c[0] + ';--c2:' + c[1] + ';--c3:' + c[2] + ';--len:' + len + 'px;--dur:' + (4 + len / 12).toFixed(1) + 's">' +
+      '<span class="hang"><span class="thread"></span><span class="cap"></span><span class="ball"><span class="bname"' + (fs ? ' style="font-size:' + fs + 'px"' : '') + '>' + word + '</span></span><span class="olabel">' + note + '</span></span></button>';
+    const bulbs = ['#ff5a5a', '#ffd76a', '#6fe3a5', '#7cc4ff', '#ffffff', '#ff9ad1', '#ffd76a', '#6fe3a5', '#ff5a5a'];
     A.ui.sheet({
-      title: 'Sign-in options',
-      html: '<p class="muted">' + esc(me) + ' is tied to ' + (mine(me) ? 'this phone' : 'another phone') + ', so nobody else can pick it. Add any of these, all of them, or none.</p>' +
-        '<div style="margin-top:8px">' +
-        row('lock', 'PIN', hasKind(me, 'pin') ? 'On. Works on any phone.' : KIND.pin.rule, hasKind(me, 'pin'), two('pin')) +
-        row('pencil', 'Password', hasKind(me, 'pw') ? 'On. Works on any phone.' : KIND.pw.rule, hasKind(me, 'pw'), two('pw')) +
-        row('eye', 'Face ID or fingerprint', faceOn(me) ? 'On, for this phone.' : 'For this phone only.', faceOn(me), '<button class="btn sm' + (faceOn(me) ? ' ghost' : ' primary') + '" id="lkFaceSw" hidden>' + (faceOn(me) ? 'Turn off' : 'Turn on') + '</button><small id="lkNoFace">Checking…</small>') +
-        row('link', 'Code by email or text', 'Needs real accounts. Not available yet.', false, '') +
-        '</div><p class="gp-msg" id="lkMsg"></p>',
+      title: 'Your locks', cls: 'so',
+      html: '<p class="muted">' + esc(me) + ' is yours on ' + (mine(me) ? 'this phone' : 'another phone') + '. Tap an ornament to add a lock. Lit ones are on.</p>' +
+        '<div class="so-string">' + bulbs.map((c, i) => '<i style="left:' + (4 + i * 11.5) + '%;top:' + (Math.sin(Math.PI * (4 + i * 11.5) / 100) * 78).toFixed(0) + '%;--c:' + c + ';animation-delay:' + (-i * .37).toFixed(2) + 's"></i>').join('') + '</div>' +
+        '<div class="so-row">' +
+        orn('soPin', 'PIN', ['#ff7a8a', '#c41e3a', '#5e0a18'], 10, hasKind(me, 'pin'), hasKind(me, 'pin') ? 'On' : 'Tap to add') +
+        orn('soPw', 'Password', ['#5fe3a1', '#0f8a55', '#053d25'], 26, hasKind(me, 'pw'), hasKind(me, 'pw') ? 'On' : 'Tap to add', 17) +
+        orn('soFace', 'Face ID', ['#7cc4ff', '#1d6fd6', '#0a2c66'], 14, faceOn(me), faceOn(me) ? 'On here' : 'Checking', 19) +
+        '</div><p class="gp-msg" id="lkMsg" style="text-align:center"></p>' +
+        '<p class="so-foot">A PIN or password works on any phone. Face ID or fingerprint is for this phone. Codes by email or text need real accounts, so they are not here yet.</p>',
       onMount(el, close) {
         const again = () => { close(); optionsSheet(); }, msg = $('#lkMsg', el);
-        $$('[data-add]', el).forEach(b => { b.onclick = () => makeSecret(me, b.dataset.add).then(r => { if (r === 'ok') { A.ui.toast('Saved.'); again(); } }); });
-        $$('[data-del]', el).forEach(b => { b.onclick = () => {
-          const k = b.dataset.del, lastOne = !hasKind(me, k === 'pin' ? 'pw' : 'pin');
-          if (lastOne && !mine(me)) { msg.textContent = 'Keep one of these on this phone, because ' + me + ' belongs to another phone.'; return; }
-          dropSecret(me, k); A.ui.toast('Removed.'); again();
-        }; });
-        const fs = $('#lkFaceSw', el), nf = $('#lkNoFace', el);
+        const typed = (id, k) => { $('#' + id, el).onclick = () => {
+          if (!hasKind(me, k)) { makeSecret(me, k).then(r => { if (r === 'ok') { A.ui.toast('Saved.'); again(); } }); return; }
+          const K = KIND[k];
+          A.ui.sheet({ title: 'Your ' + K.word, html: '<div class="lk-stack"><button class="btn primary block" id="soCh">Change it</button><button class="btn danger block" id="soRm">Take it off</button></div><p class="gp-msg" id="soMsg"></p>',
+            onMount(s2, c2) {
+              $('#soCh', s2).onclick = () => { c2(); makeSecret(me, k).then(r => { if (r === 'ok') { A.ui.toast('Saved.'); again(); } }); };
+              $('#soRm', s2).onclick = () => {
+                if (!hasKind(me, k === 'pin' ? 'pw' : 'pin') && !mine(me)) { $('#soMsg', s2).textContent = 'Keep one lock on this phone, because ' + me + ' belongs to another phone.'; return; }
+                dropSecret(me, k); c2(); A.ui.toast('Taken off.'); again();
+              };
+            } });
+        }; };
+        typed('soPin', 'pin'); typed('soPw', 'pw');
+        const fb = $('#soFace', el), note = $('.olabel', fb);
         faceReady().then(ok => {
-          if (!ok) { nf.textContent = 'Not on this phone'; return; }
-          nf.remove(); fs.hidden = false;
-          fs.onclick = () => { if (faceOn(me)) { raw.del(faceKey(me)); again(); } else faceSetup(me).then(() => { A.ui.toast('Done. This phone can sign you in.'); again(); }, () => { msg.textContent = 'That did not turn on.'; }); };
+          if (!ok && !faceOn(me)) { note.textContent = 'Not on this phone'; fb.disabled = true; return; }
+          if (!faceOn(me)) note.textContent = 'Tap to add';
+          fb.onclick = () => { if (faceOn(me)) { raw.del(faceKey(me)); A.ui.toast('Face ID is off here.'); again(); } else faceSetup(me).then(() => { A.ui.toast('Done. This phone can sign you in.'); again(); }, () => { msg.textContent = 'That did not turn on.'; }); };
         });
       }
     });
