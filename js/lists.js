@@ -80,6 +80,9 @@
     .fold summary>span{display:flex;flex-direction:column;gap:1px}
     .fold summary small{display:flex;align-items:center;gap:5px;font-weight:500;font-size:12.5px;color:var(--muted)}
     .fold summary small.set{color:#5fe3a1}
+    /* the wish photo always shows whole, never cropped or blown up */
+    .gal>*{min-width:0;min-height:0;overflow:hidden}
+    .gal img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
     @media (max-width:520px){.phead{gap:8px}.phead>.avatar{display:none}.phead .ttl .h1{font-size:clamp(19px,5.5vw,28px)}.phead .btn{padding:0 12px;gap:6px}}
     .wcard.is-got .wpic img,.wcard.is-got .wpic .ph{filter:grayscale(1);opacity:.45}
     .wcard.is-got .wtitle,.wcard.is-got .wprice,.wcard.is-got .wwhy{opacity:.5}
