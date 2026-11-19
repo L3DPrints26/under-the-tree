@@ -55,10 +55,11 @@
         <div class="home-fx"><button class="icon-btn solid" id="fxSanta" aria-label="Call Santa">${A.icon('sleigh', 20)}</button><button class="icon-btn solid" id="fxSnow" aria-label="Let it snow">${A.icon('snow', 20)}</button></div>
         <div class="count${xmasDay ? ' merry' : ''}">${xmasDay
           ? '<span class="count-num">Merry Christmas</span><span class="count-unit">Go open something.</span>'
-          : '<span class="count-num">0</span><span class="count-unit">days until Christmas</span><span class="count-sub"><span><b>00</b> hr</span><span><b>00</b> min</span><span><b>00</b> sec</span></span>'}</div>
+          : '<span class="count-num">0</span><span class="count-unit">days until Christmas</span><span class="count-sub"><span><b>00</b> hr</span><span><b>00</b> min</span><span><b>00</b> sec</span></span>'}${A.reveal ? A.reveal.chipHTML() : ''}</div>
         <div class="tree-area">${rows.map((r, ri) => `<div class="g-row">${garland(ri, w, gh)}<div class="orns" style="margin-top:${(-gh * .5).toFixed(0)}px">${r.map((n, i) => orn(n, lens[ri * per + i] * h, ri * per + i, size)).join('')}</div></div>`).join('')}</div>`;
       tick(true); clearInterval(timer); timer = setInterval(tick, 1000);
       $$('.orn', root).forEach(b => b.onclick = () => A.go('#/list/' + encodeURIComponent(b.dataset.name)));
+      if (A.reveal) A.reveal.wire(root);
       $('#fxSanta', root).onclick = () => { if (A.scene) A.scene.callSanta(); };
       $('#fxSnow', root).onclick = () => { if (A.scene) A.scene.blizzard(); A.ui.toast('Blizzard for ten seconds.'); };
     },

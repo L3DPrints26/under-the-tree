@@ -123,13 +123,14 @@
     const share = obj('share');
     if (share) { delete share[me]; Object.keys(share).forEach(n => { if (Array.isArray(share[n])) share[n] = share[n].filter(x => x !== me); }); S.set('share', share); }
     const games = obj('games'); if (games) { Object.keys(games).forEach(g => { if (games[g] && typeof games[g] === 'object') delete games[g][me]; }); S.set('games', games); }
-    ['santaBest', 'advent', 'privacy', 'pins', 'about'].forEach(k => { const v = obj(k); if (v && me in v) { delete v[me]; S.set(k, v); } });
+    ['santaBest', 'advent', 'privacy', 'pins', 'about', 'reveal'].forEach(k => { const v = obj(k); if (v && me in v) { delete v[me]; S.set(k, v); } });
     const hist = obj('history');
     if (hist) { Object.keys(hist).forEach(y => { if (hist[y] && hist[y][me]) { hist[y][me].forEach(it => (it.photos || []).forEach(p => { if (p && p.id) pics.push(p.id); })); delete hist[y][me]; } }); S.set('history', hist); }
     const pp = obj('pics'); if (pp && pp[me]) { pics.push(pp[me]); delete pp[me]; S.set('pics', pp); }
     const orns = obj('orns'); if (orns && orns[me]) { if (orns[me].img) pics.push(orns[me].img); delete orns[me]; S.set('orns', orns); }
     const santa = obj('santa'); if (santa && santa.votes && santa.votes[me]) { delete santa.votes[me]; S.set('santa', santa); }
     const watch = obj('watch'); if (watch) { Object.keys(watch).forEach(k => { if (watch[k] && watch[k].n === me) delete watch[k]; }); S.set('watch', watch); }
+    const th = obj('thanks'); if (th) { Object.keys(th).forEach(k => { if (th[k] && (th[k].from === me || th[k].to === me)) delete th[k]; }); S.set('thanks', th); }
     const rep = obj('reports'); if (rep) { Object.keys(rep).forEach(k => { if (rep[k] && (rep[k].by === me || rep[k].o === me)) delete rep[k]; }); S.set('reports', rep); }
     pics.forEach(id => { A.photos.remove(id); if (A.cloud && A.cloud.dropPhoto) A.cloud.dropPhoto(id); });
     if (alsoName) {

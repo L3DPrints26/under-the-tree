@@ -29,7 +29,7 @@
       title: 'Who can see what', cls: 'pvs',
       html: '<div class="pv">' +
         '<div class="pv-b all"><h3>' + A.icon('users', 20) + 'Everyone in the group sees</h3><ul><li>Your wishlist</li><li>Your favorites quiz</li><li>What you marked as got</li><li>Your picture and ornament</li><li>That you voted</li></ul></div>' +
-        '<div class="pv-b me"><h3>' + A.icon('lock', 20) + 'Only you see</h3><ul><li>Who you voted for</li><li>Who you got in Secret Santa</li><li>Your picks</li><li>Your PIN and password</li><li>Your advent doors</li></ul></div>' +
+        '<div class="pv-b me"><h3>' + A.icon('lock', 20) + 'Only you see</h3><ul><li>Who you voted for</li><li>Who you got in Secret Santa</li><li>Your picks, unless everyone votes to reveal them after Christmas</li><li>Your PIN and password</li><li>Your advent doors</li></ul></div>' +
         '<div class="pv-b pick"><h3>' + A.icon('sliders', 20) + 'You choose</h3>' +
           '<label class="switch"><span class="s-text"><b>Show when I am online</b><small>The green dot on your ornament</small></span><input type="checkbox" id="pvOn"' + (p.online ? ' checked' : '') + '></label>' +
           '<label class="switch"><span class="s-text"><b>Show my scores</b><small>On the game and Santa leaderboards</small></span><input type="checkbox" id="pvSc"' + (p.scores ? ' checked' : '') + '></label>' +
