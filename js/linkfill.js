@@ -86,7 +86,7 @@
       } catch (e) { photo = ''; }
     }
     if (!name && !price && !photo) throw new Error('nothing');
-    return { name: name, price: price, photo: photo, link: url, host: host(url), src: img };
+    return { name: name, price: price, photo: photo, link: url, host: host(url) };
   }
 
   /* the box at the top of the wish form */
