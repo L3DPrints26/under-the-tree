@@ -379,7 +379,7 @@
     const size = n <= 4 ? 78 : n <= 8 ? 66 : 56, lens = [8, 22, 12, 26, 6, 18];
     const orn = (name, i) => { const p = A.person(name), tag = name === me ? 'You' : name === org ? 'Runs this' : (A.lock && A.lock.has(name) ? 'Taken' : 'Not picked yet');
       return '<button class="orn pp-orn' + (name === me ? ' me' : '') + '" data-name="' + esc(name) + '" data-p="' + esc(name) + '" style="--size:' + size + 'px;--c1:' + p.c[0] + ';--c2:' + p.c[1] + ';--c3:' + p.c[2] + ';--len:' + lens[i % lens.length] + 'px;--dur:' + (4.2 + (i * 37 % 17) / 10).toFixed(1) + 's">' +
-        '<span class="hang"><span class="thread"></span><span class="cap"></span><span class="ball"><span class="bname" style="font-size:' + Math.max(11, Math.round(size * (name.length > 7 ? 1.75 / name.length : .25))) + 'px">' + esc(name) + '</span></span><span class="olabel">' + tag + '</span></span></button>'; };
+        '<span class="hang"><span class="thread"></span><span class="cap"></span><span class="ball"><span class="bname" style="font-size:' + Math.max(10, Math.round(size * (name.length > 6 ? 1.25 / name.length : .19))) + 'px">' + esc(name) + '</span></span><span class="olabel">' + tag + '</span></span></button>'; };
     A.ui.sheet({
       title: 'People', cls: 'pp',
       html: '<div class="pp-rail"></div><div class="pp-grid">' + A.names.map(orn).join('') + '</div>' +

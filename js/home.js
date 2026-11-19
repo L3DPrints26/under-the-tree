@@ -26,7 +26,7 @@
   function orn(name, len, j, size) {
     const p = A.person(name), n = A.data ? A.data.items(name).length : 0, me = name === A.me(), e = A.esc(name);
     /* long names are set a little smaller so they stay inside the ball */
-    const fs = name.length > 7 ? `font-size:calc(var(--size)*${Math.max(.13, .25 * 7.4 / name.length).toFixed(3)})` : '';
+    const fs = name.length > 6 ? `font-size:calc(var(--size)*${Math.max(.1, .19 * 6.4 / name.length).toFixed(3)})` : '';
     return `<button class="orn${me ? ' me' : ''}" data-name="${e}" aria-label="Open ${A.esc(A.poss(name))} wishlist" style="--size:${size};--c1:${p.c[0]};--c2:${p.c[1]};--c3:${p.c[2]};--len:${len.toFixed(0)}px;--dur:${(4.2 + (j * 37 % 17) / 10).toFixed(1)}s;--del:${(-j * .7).toFixed(1)}s">
       <span class="hang"><span class="thread"></span><span class="cap"></span><span class="ball"><span class="bname" style="${fs}">${e}</span></span>
       <span class="olabel">${me ? 'You' + (n ? ', ' + n : '') : (n ? n + (n === 1 ? ' wish' : ' wishes') : 'Empty')}</span></span></button>`;

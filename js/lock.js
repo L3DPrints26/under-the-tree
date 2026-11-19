@@ -207,8 +207,8 @@
         '<div class="so-string">' + bulbs.map((c, i) => '<i style="left:' + (4 + i * 11.5) + '%;top:' + (Math.sin(Math.PI * (4 + i * 11.5) / 100) * 78).toFixed(0) + '%;--c:' + c + ';animation-delay:' + (-i * .37).toFixed(2) + 's"></i>').join('') + '</div>' +
         '<div class="so-row">' +
         orn('soPin', 'PIN', ['#ff7a8a', '#c41e3a', '#5e0a18'], 10, hasKind(me, 'pin'), hasKind(me, 'pin') ? 'On' : 'Tap to add') +
-        orn('soPw', 'Password', ['#5fe3a1', '#0f8a55', '#053d25'], 26, hasKind(me, 'pw'), hasKind(me, 'pw') ? 'On' : 'Tap to add', 17) +
-        orn('soFace', 'Face ID', ['#7cc4ff', '#1d6fd6', '#0a2c66'], 14, faceOn(me), faceOn(me) ? 'On here' : 'Checking', 19) +
+        orn('soPw', 'Password', ['#5fe3a1', '#0f8a55', '#053d25'], 26, hasKind(me, 'pw'), hasKind(me, 'pw') ? 'On' : 'Tap to add', 13) +
+        orn('soFace', 'Face ID', ['#7cc4ff', '#1d6fd6', '#0a2c66'], 14, faceOn(me), faceOn(me) ? 'On here' : 'Checking', 15) +
         '</div><p class="gp-msg" id="lkMsg" style="text-align:center"></p>' +
         '<p class="so-foot">A PIN or password works on any phone. Face ID or fingerprint is for this phone. Codes by email or text need real accounts, so they are not here yet.</p>',
       onMount(el, close) {

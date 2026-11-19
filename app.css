@@ -10,7 +10,7 @@
   --r:18px; --r-sm:12px; --r-xs:8px;
   --font:"DM Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --display:"Fraunces",Georgia,"Times New Roman",serif;
-  --script:"Great Vibes","Segoe Script",cursive;
+  --script:"Berkshire Swash","Fraunces",Georgia,serif;
   --tap:44px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -230,7 +230,7 @@ textarea.input{min-height:96px;resize:none;line-height:1.45}
 .ball::before,.ball::after{content:"";position:absolute;border-radius:50%;border-bottom:1.4px solid rgba(255,238,180,.6)}
 .ball::before{left:7%;right:7%;top:10%;height:28%}
 .ball::after{left:2%;right:2%;top:44%;height:28%}
-.bname{font-family:var(--script);font-size:calc(var(--size)*.25);color:#fffdf2;line-height:1;position:relative;z-index:1;text-shadow:0 2px 5px rgba(0,0,0,.55)}
+.bname{font-family:var(--script);font-size:calc(var(--size)*.19);color:#fffdf2;line-height:1;position:relative;z-index:1;text-shadow:0 2px 5px rgba(0,0,0,.55)}
 .orn.me .ball{box-shadow:inset calc(var(--size)*-.08) calc(var(--size)*-.1) calc(var(--size)*.22) rgba(0,0,0,.42),0 0 0 2.5px var(--gold),0 calc(var(--size)*.1) calc(var(--size)*.24) rgba(0,0,0,.45)}
 .olabel{margin-top:max(5px,1cqh);font-size:clamp(10.5px,2cqh,12.5px);font-weight:600;color:#e9f0fb;background:rgba(6,14,30,.8);border-radius:999px;padding:2px 9px;white-space:nowrap}
 .orn.me .olabel{background:var(--gold);color:var(--gold-ink)}

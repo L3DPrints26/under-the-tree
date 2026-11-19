@@ -64,6 +64,8 @@ window.App = (function () {
     ['#c8d3e6', '#6b7c99', '#2a3550'], ['#d7f08a', '#7fa21a', '#3a4d08'], ['#ff9ad8', '#b0309a', '#541048'], ['#a8b6ff', '#4654c9', '#1c2266']
   ];
   App.maxPeople = PALETTE.length;
+  App.palette = PALETTE;
+  App.setColor = (name, c) => { const obj = App.store.get('people', {}) || {}; if (!obj[name]) return; obj[name] = Object.assign({}, obj[name], { c }); App.store.set('people', obj); App.loadPeople(); App.emit('people'); };
   App.people = []; App.names = [];
   App.person = n => App.people.find(p => p.name === n) || { name: n, c: PALETTE[8] };
   App.loadPeople = () => {
@@ -198,6 +200,39 @@ window.App = (function () {
   App.photos.ready.then(paintPics);
   App.on('photo', paintPics);
 
+  /* ---------- ornament looks ----------
+     Everyone's ornament has a style (pattern and shape), or a picture they made in the ornament designer.
+     Like the profile pictures, one style rule per person paints it everywhere that ornament hangs.
+     Busy patterns and pictures put the name on a dark tag so it always reads. */
+  const ORN_STYLES = [
+    { n: 'Classic', bg: '' },
+    { n: 'Candy stripe', bg: 'repeating-linear-gradient(135deg,rgba(255,255,255,.28) 0 7%,rgba(255,255,255,0) 7% 19%)', pill: 1 },
+    { n: 'Snow cap', bg: 'radial-gradient(ellipse 80% 48% at 50% -8%,rgba(255,255,255,.96) 0 58%,rgba(255,255,255,0) 60%)', r: '50% 50% 50% 50% / 58% 58% 42% 42%' },
+    { n: 'Gold bands', bg: 'linear-gradient(180deg,rgba(247,227,161,0) 28%,rgba(247,227,161,.92) 28% 32%,rgba(247,227,161,0) 32% 68%,rgba(247,227,161,.92) 68% 72%,rgba(247,227,161,0) 72%)' },
+    { n: 'Dots', bg: 'radial-gradient(circle,rgba(255,255,255,.72) 0 15%,rgba(255,255,255,0) 17%) 0 0/25% 25%', pill: 1 },
+    { n: 'Plaid', bg: 'repeating-linear-gradient(0deg,rgba(0,0,0,.22) 0 9%,rgba(0,0,0,0) 9% 24%),repeating-linear-gradient(90deg,rgba(255,255,255,.2) 0 9%,rgba(255,255,255,0) 9% 24%)', pill: 1, r: '50% 50% 50% 50% / 44% 44% 56% 56%' },
+    { n: 'Two tone', bg: 'linear-gradient(180deg,rgba(0,0,0,0) 55%,rgba(247,227,161,.92) 55% 58%,rgba(0,0,0,.3) 58%)' },
+    { n: 'Sparkle', bg: 'radial-gradient(circle at 22% 64%,#fff 0 2.4%,transparent 3.2%),radial-gradient(circle at 72% 24%,#fff 0 2.8%,transparent 3.6%),radial-gradient(circle at 82% 66%,#ffe9a8 0 2.4%,transparent 3.2%),radial-gradient(circle at 38% 84%,#ffe9a8 0 2.2%,transparent 3%),radial-gradient(circle at 52% 13%,#fff 0 2%,transparent 2.8%)' }
+  ];
+  const ORN_SHINE = 'radial-gradient(circle at 30% 26%,rgba(255,255,255,.95) 0,rgba(255,255,255,.5) 5%,rgba(255,255,255,0) 20%),radial-gradient(circle at 72% 80%,rgba(255,255,255,.18) 0,rgba(255,255,255,0) 34%)';
+  const ORN_BASE = 'radial-gradient(circle at 38% 32%,var(--c1) 0,var(--c2) 56%,var(--c3) 100%)';
+  const ORN_TAG = '{background:rgba(6,14,30,.74);padding:.16em .55em;border-radius:999px;box-shadow:0 0 0 1.5px rgba(255,255,255,.22)}';
+  App.ornStyles = ORN_STYLES;
+  App.ornOf = n => { const o = (App.store.get('orns', {}) || {})[n]; return o && typeof o === 'object' ? o : { st: Math.max(0, App.names.indexOf(n)) % ORN_STYLES.length }; };
+  const ornCss = document.createElement('style'); document.head.appendChild(ornCss);
+  const paintOrns = () => {
+    ornCss.textContent = App.names.map(n => {
+      const o = App.ornOf(n), sel = '.orn[data-name="' + n + '"]', plain = sel + ' .ball::before,' + sel + ' .ball::after{display:none}';
+      if (o.img) { const src = App.photos.src({ id: o.img }); if (src) return sel + ' .ball{background:' + ORN_SHINE + ',url("' + src + '") center/cover}' + plain + sel + ' .bname' + ORN_TAG; }
+      const s = ORN_STYLES[(o.st | 0) % ORN_STYLES.length] || ORN_STYLES[0];
+      return sel + ' .ball{background:' + ORN_SHINE + (s.bg ? ',' + s.bg : '') + ',' + ORN_BASE + (s.r ? ';border-radius:' + s.r : '') + '}' + (s.bg ? plain : '') + (s.pill ? sel + ' .bname' + ORN_TAG : '');
+    }).join('');
+  };
+  App.setOrn = (name, design) => { const o = App.store.get('orns', {}) || {}; o[name] = design; App.store.set('orns', o); paintOrns(); };
+  App.photos.ready.then(paintOrns);
+  App.on('photo', paintOrns); App.on('people', paintOrns);
+  App.on('sync', keys => { if (keys.indexOf('orns') >= 0 || keys.indexOf('people') >= 0) paintOrns(); });
+
   /* ---------- who is online ----------
      The group keeps a short note for every open app (see cloud.js). Anyone on that list gets a green
      dot on their picture and their ornament, painted with one style rule so nothing is redrawn. */
@@ -231,6 +266,13 @@ window.App = (function () {
     .sheet::before{content:"";position:absolute;left:0;right:0;top:0;height:8px;z-index:2;background:repeating-linear-gradient(135deg,#c9243a 0 10px,#f4ecdc 10px 20px);box-shadow:0 1px 0 rgba(0,0,0,.28)}
     .sheet-head{padding-top:22px}
     .sheet-head h2{font-size:23px}
+    .sheet-back.under{visibility:hidden}
+    .bname{text-shadow:0 2px 4px rgba(0,0,0,.75),0 0 2px rgba(0,0,0,.85)}
+    .who-orn{display:flex;align-items:center;gap:12px;width:100%;margin-top:10px;padding:10px 14px;border-radius:16px;text-align:left;background:#7d1727;border:1px solid #b33247}
+    .who-orn:active{transform:scale(.98)}
+    .who-orn-b{width:38px;height:38px;border-radius:50%;flex:none;background:radial-gradient(circle at 30% 26%,rgba(255,255,255,.95) 0,rgba(255,255,255,.4) 7%,rgba(255,255,255,0) 22%),repeating-linear-gradient(135deg,rgba(255,255,255,.3) 0 7%,rgba(255,255,255,0) 7% 19%),radial-gradient(circle at 38% 32%,#ffe08a,#d49a1c 58%,#6b4a06);box-shadow:inset -3px -4px 8px rgba(0,0,0,.35)}
+    .who-orn b{display:block;font-weight:600;font-size:15.5px;color:#fff}
+    .who-orn small{display:block;font-size:13px;color:#ffd6dc}
     .who-row{margin-top:12px}
     .mu{display:flex;flex-direction:column;gap:14px}
     .mu-a,.mu-b{display:flex;flex-direction:column;gap:10px;min-width:0}
@@ -295,7 +337,9 @@ window.App = (function () {
 
   /* ---------- UI helpers ---------- */
   const ui = App.ui = {};
+  let lastToast = '', lastToastAt = 0;
   ui.toast = msg => {
+    if (msg === lastToast && Date.now() - lastToastAt < 2500) return; lastToast = msg; lastToastAt = Date.now();
     const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; $('#toasts').appendChild(t);
     setTimeout(() => t.classList.add('out'), 2600); setTimeout(() => t.remove(), 3100);
   };
@@ -308,6 +352,10 @@ window.App = (function () {
      opts: {title, html, wide, locked, onMount(el, close), onClose()} → {el, close} */
   const stack = [];
   ui.sheet = opts => {
+    const topNow = stack[stack.length - 1];
+    if (topNow && topNow.title === (opts.title || '') && Date.now() - topNow.at < 600) return topNow;      /* a double tap */
+    $$('#sheets .sheet-back.out').forEach(x => x.remove());                                                  /* one on its way out */
+    if (topNow) topNow.back.classList.add('under');                                                          /* the one underneath waits out of sight */
     const back = document.createElement('div'); back.className = 'sheet-back';
     back.innerHTML = '<div class="sheet' + (opts.wide ? ' wide' : '') + (opts.cls ? ' ' + opts.cls : '') + '" role="dialog" aria-modal="true">' +
       '<header class="sheet-head"><h2>' + App.esc(opts.title || '') + '</h2>' +
@@ -315,8 +363,8 @@ window.App = (function () {
       '<div class="sheet-body">' + (opts.html || '') + '</div></div>';
     $('#sheets').appendChild(back);
     let closed = false;
-    const close = () => { if (closed) return; closed = true; back.classList.add('out'); const i = stack.indexOf(api); if (i >= 0) stack.splice(i, 1); setTimeout(() => back.remove(), 220); if (opts.onClose) opts.onClose(); };
-    const api = { el: back.firstChild, close, locked: !!opts.locked };
+    const close = () => { if (closed) return; closed = true; back.classList.remove('under'); back.classList.add('out'); const i = stack.indexOf(api); if (i >= 0) stack.splice(i, 1); const t = stack[stack.length - 1]; if (t) t.back.classList.remove('under'); setTimeout(() => back.remove(), 220); if (opts.onClose) opts.onClose(); };
+    const api = { el: back.firstChild, back, close, locked: !!opts.locked, title: opts.title || '', at: Date.now() };
     back.addEventListener('click', e => { if ((e.target === back && !opts.locked) || e.target.closest('[data-close]')) close(); });
     stack.push(api);
     requestAnimationFrame(() => back.classList.add('in'));
@@ -423,6 +471,7 @@ window.App = (function () {
       title: picker ? (first === 'switch' ? 'Switch person' : "Who's using this?") : 'Your profile', locked: picker && first !== 'switch', cls: 'who', onClose() { whoApi = null; },
       html: mine
         ? '<div class="me-pic" id="picRow">' + picRow() + '</div><input type="file" accept="image/*" id="picFile" hidden>' +
+          '<button class="who-orn" id="whoOrn"><span class="who-orn-b"></span><span><b>Design my ornament</b><small>Styles, a photo, or draw your own</small></span></button>' +
           '<div class="row gap who-row">' + (App.cloud ? '<button class="btn grow" id="whoGroups">' + App.icon('users', 18) + (App.space() ? 'Group' : 'Go online') + '</button>' : '') +
           '<button class="btn grow" id="whoSet">' + App.icon('sliders', 18) + 'Settings</button></div>' +
           '<button class="btn ghost block who-switch" id="whoSwitch">Switch person</button>'
@@ -439,6 +488,7 @@ window.App = (function () {
         const grp = $('#whoGroups', el); if (grp) grp.onclick = () => { close(); App.cloud.groupSheet(); };
         const set = $('#whoSet', el); if (set) set.onclick = () => { close(); ui.settings(); };
         const sw = $('#whoSwitch', el); if (sw) sw.onclick = () => { close(); ui.who('switch'); };
+        const ob = $('#whoOrn', el); if (ob) ob.onclick = () => { close(); if (ui.ornament) ui.ornament(); };
         if (!mine) return;
         const row = $('#picRow', el), file = $('#picFile', el);
         const draw = () => { row.innerHTML = picRow(); $('#picPick', row).onclick = () => file.click(); const c = $('#picClear', row); if (c) c.onclick = () => { App.pics.clear(ME); draw(); }; };
