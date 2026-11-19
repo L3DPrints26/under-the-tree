@@ -268,6 +268,36 @@
   A.on('me', n => { if (lastMe && lastMe !== n && !mine(lastMe)) raw.del(okKey(lastMe)); lastMe = n; setTimeout(ensure, 300); });
   A.on('sync', keys => { if (keys.indexOf('pins') >= 0 || keys.indexOf('owners') >= 0) setTimeout(ensure, 300); });
 
+  /* ---------- a watch asking to be you ----------
+     The watch app leaves a note under "watch" saying which name it wants. Only the phone that owns that
+     name gets asked. Yes lets that one watch in. No throws the note away. */
+  let watchAsking = false;
+  function watchCheck() {
+    if (OFF || watchAsking || !A.space() || !A.cloud || !A.cloud.synced()) return;
+    const me = A.me(); if (!me || !mine(me)) return;
+    const all = A.store.get('watch', {}) || {};
+    const id = Object.keys(all).find(k => all[k] && all[k].n === me && !all[k].ok && Date.now() - (+all[k].t || 0) < 600000);
+    if (!id) return;
+    if (A.ui.sheetOpen()) { setTimeout(watchCheck, 1500); return; }
+    watchAsking = true;
+    let yes = false;
+    A.ui.sheet({
+      title: 'Is this your watch?',
+      html: '<p class="muted">An Apple Watch wants to open Under the Tree as ' + esc(me) + '. Only say yes if it is yours.</p>' +
+        '<div class="lk-stack"><button class="btn primary block" id="wkYes">Yes, it is mine</button><button class="btn ghost block" data-close>No</button></div>',
+      onMount(el, close) { $('#wkYes', el).onclick = () => { yes = true; close(); }; },
+      onClose() {
+        const w = A.store.get('watch', {}) || {};
+        if (yes && w[id]) w[id] = Object.assign({}, w[id], { ok: dev }); else delete w[id];
+        A.store.set('watch', w); watchAsking = false;
+        if (yes) A.ui.toast('Your watch is in.');
+        setTimeout(watchCheck, 600);
+      }
+    });
+  }
+  A.on('cloud', watchCheck);
+  A.on('sync', keys => { if (keys.indexOf('watch') >= 0) setTimeout(watchCheck, 200); });
+
   A.lock = {
     has: locked, hasPin, choose, ensure, organizer, faceReady, faceOn, optionsSheet,
     on: () => !OFF && !!A.space(),

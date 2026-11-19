@@ -267,7 +267,8 @@ window.App = (function () {
   const onCss = document.createElement('style'); document.head.appendChild(onCss);
   App.online = () => {
     const st = App.cloud ? App.cloud.status() : 'off'; if (st === 'off' || st === 'offline') return [];
-    const o = App.store.get('online', {}) || {}, on = {}; Object.keys(o).forEach(k => { if (o[k] && o[k].n) on[o[k].n] = 1; });
+    /* a watch cannot tell the server when it closes, so its note carries a time and goes stale by itself */
+    const o = App.store.get('online', {}) || {}, on = {}, now = Date.now(); Object.keys(o).forEach(k => { const e = o[k]; if (e && e.n && !(e.t && now - e.t > 150000)) on[e.n] = 1; });
     return App.names.filter(n => on[n]);
   };
   const paintOnline = () => {
@@ -275,6 +276,7 @@ window.App = (function () {
       '.orn[data-name="' + n + '"] .olabel::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#3ddc84;margin-right:5px;vertical-align:1px}').join('');
   };
   App.on('sync', keys => { if (keys.indexOf('online') >= 0 || keys.indexOf('people') >= 0) paintOnline(); });
+  setInterval(paintOnline, 60000);
   App.on('cloud', paintOnline);
   App.on('people', paintPics);
   App.on('sync', keys => { if (keys.indexOf('pics') >= 0 || keys.indexOf('people') >= 0) { PICS = App.store.get('pics', {}) || {}; paintPics(); } });
