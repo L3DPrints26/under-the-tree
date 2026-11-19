@@ -166,14 +166,19 @@
 .gm-card.up .gm-card-in{transform:rotateY(180deg)}
 .gm-card:not(.up):active .gm-card-in{transform:scale(.95)}
 .gm-face,.gm-backf{position:absolute;inset:0;display:grid;place-items:center;overflow:hidden;border-radius:inherit;backface-visibility:hidden;-webkit-backface-visibility:hidden;box-shadow:0 2px 5px rgba(0,0,0,.35)}
-.gm-backf{color:var(--gold);background:
-  repeating-linear-gradient(45deg,rgba(255,255,255,.06) 0 1.5px,rgba(255,255,255,0) 1.5px 9px),
-  repeating-linear-gradient(-45deg,rgba(255,255,255,.06) 0 1.5px,rgba(255,255,255,0) 1.5px 9px),
-  linear-gradient(160deg,#c9243f,#8b1127)}
+.gm-backf{color:#ffe9a8;background:
+  radial-gradient(circle at 50% 50%,rgba(255,233,168,.2) 0 27%,rgba(255,233,168,0) 28%),
+  repeating-linear-gradient(45deg,rgba(255,255,255,.09) 0 2px,rgba(255,255,255,0) 2px 10px),
+  repeating-linear-gradient(-45deg,rgba(0,0,0,.12) 0 2px,rgba(0,0,0,0) 2px 10px),
+  linear-gradient(160deg,#d42a45,#7a0f22)}
+.gm-backf::after{content:"";position:absolute;inset:calc(var(--cw,60px)*.13);border:1px solid rgba(255,233,168,.45);border-radius:calc(var(--cw,60px)*.05);pointer-events:none}
+.gm-face,.gm-backf{box-shadow:0 3px 8px rgba(0,0,0,.42),inset 0 1px 0 rgba(255,255,255,.3)}
 .gm-backf::before{content:"";position:absolute;inset:calc(var(--cw,60px)*.075);border:1.5px solid rgba(233,196,106,.8);border-radius:calc(var(--cw,60px)*.07)}
 .gm-backf svg{position:relative;width:42%;height:auto}
-.gm-face{transform:rotateY(180deg);background:#f7f2e6;color:var(--k,#147150)}
-.gm-face::before{content:"";position:absolute;left:50%;top:50%;width:72%;aspect-ratio:1;border-radius:50%;background:currentColor;opacity:.1;transform:translate(-50%,-50%)}
+.gm-face{transform:rotateY(180deg);background:linear-gradient(165deg,#fffaf0,#efe4cd);color:var(--k,#147150);border:2px solid currentColor}
+.gm-face::after{content:"";position:absolute;inset:calc(var(--cw,60px)*.06);border:1px dashed currentColor;border-radius:calc(var(--cw,60px)*.06);opacity:.35;pointer-events:none}
+.gm-face svg{stroke-width:2.2;filter:drop-shadow(0 1px 0 rgba(255,255,255,.8))}
+.gm-face::before{content:"";position:absolute;left:50%;top:50%;width:70%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,currentColor 160%);opacity:.2;transform:translate(-50%,-50%)}
 .gm-face svg{position:relative;width:50%;height:auto}
 .gm-card.done .gm-face{box-shadow:inset 0 0 0 3px var(--gold2),0 2px 5px rgba(0,0,0,.35)}
 .gm-card.done .gm-face::before{opacity:.17}
@@ -273,42 +278,64 @@
     { box: '#a3162a', lid: '#c2203a', rib: '#43c693', ribD: '#147150', pat: 'stripes', w: 1.1, h: .88 },
     { box: '#147150', lid: '#1f9d6b', rib: '#e9c46a', ribD: '#c99a2e', pat: 'dots', w: .9, h: 1.08 }
   ];
+  /* color helper: k below 0 darkens, above 0 lightens */
+  function tone(hex, k) {
+    const n = parseInt(hex.slice(1), 16), t = k < 0 ? 0 : 255, a = Math.abs(k);
+    const ch = v => Math.round(v + (t - v) * a);
+    return 'rgb(' + ch(n >> 16 & 255) + ',' + ch(n >> 8 & 255) + ',' + ch(n & 255) + ')';
+  }
+  /* satin ribbon: darker edges, a bright streak off center */
+  function satin(g, x0, x1, y0, y1, v, across) {
+    const gr = across ? g.createLinearGradient(0, y0, 0, y1) : g.createLinearGradient(x0, 0, x1, 0);
+    gr.addColorStop(0, v.ribD); gr.addColorStop(.22, v.rib); gr.addColorStop(.4, tone(v.rib, .55)); gr.addColorStop(.6, v.rib); gr.addColorStop(1, v.ribD);
+    g.fillStyle = gr; g.fillRect(x0, y0, x1 - x0, y1 - y0);
+  }
   /* a wrapped present centered on 0,0 inside a box of side s */
   function drawGift(g, s, v) {
     const hw = s * .39 * v.w, bh = s * .56 * v.h, lh = s * .16, lw = hw + s * .045, bow = s * .2, rw = s * .15;
     const lidTop = -(bh + lh + bow) / 2 + bow, top = lidTop + lh - s * .015;
-    rr(g, -hw, top, hw * 2, bh, s * .05); g.fillStyle = v.box; g.fill();
+    /* the box: lit from the upper left, darker toward the lower right */
+    let gr = g.createLinearGradient(-hw, top, hw, top + bh); gr.addColorStop(0, tone(v.box, .22)); gr.addColorStop(.5, v.box); gr.addColorStop(1, tone(v.box, -.3));
+    rr(g, -hw, top, hw * 2, bh, s * .05); g.fillStyle = gr; g.fill();
     g.save(); g.clip();
     if (v.pat === 'dots') {
-      g.fillStyle = 'rgba(255,255,255,.3)';
+      g.fillStyle = 'rgba(255,255,255,.42)';
       const st = s * .17;
-      for (let r = 0, y = top + st * .75; y < top + bh; y += st, r++) for (let x = -hw + (r % 2 ? st : st * .5); x < hw; x += st) { g.beginPath(); g.arc(x, y, s * .028, 0, TAU); g.fill(); }
+      for (let r = 0, y = top + st * .75; y < top + bh; y += st, r++) for (let x = -hw + (r % 2 ? st : st * .5); x < hw; x += st) { g.beginPath(); g.arc(x, y, s * .03, 0, TAU); g.fill(); }
     } else if (v.pat === 'stripes') {
-      g.strokeStyle = 'rgba(255,255,255,.2)'; g.lineWidth = s * .05; g.beginPath();
+      g.strokeStyle = 'rgba(255,255,255,.26)'; g.lineWidth = s * .055; g.beginPath();
       for (let x = -hw - bh; x < hw; x += s * .17) { g.moveTo(x, top + bh); g.lineTo(x + bh, top); }
       g.stroke();
+    } else {
+      /* plain paper gets a few small stars so it still looks wrapped */
+      g.fillStyle = 'rgba(255,255,255,.38)';
+      [[-.6, .28], [.55, .2], [-.25, .7], [.62, .74], [.1, .45]].forEach(p => { const x = p[0] * hw, y = top + p[1] * bh, r = s * .035; g.beginPath(); g.moveTo(x, y - r); g.lineTo(x + r * .3, y - r * .3); g.lineTo(x + r, y); g.lineTo(x + r * .3, y + r * .3); g.lineTo(x, y + r); g.lineTo(x - r * .3, y + r * .3); g.lineTo(x - r, y); g.lineTo(x - r * .3, y - r * .3); g.fill(); });
     }
-    g.fillStyle = 'rgba(0,0,0,.15)'; g.fillRect(hw * .42, top, hw, bh);
-    g.fillStyle = 'rgba(255,255,255,.1)'; g.fillRect(-hw, top, hw * .2, bh);
+    g.fillStyle = 'rgba(255,255,255,.12)'; g.fillRect(-hw, top, hw * .16, bh);
     g.restore();
-    g.fillStyle = v.rib; g.fillRect(-rw / 2, top, rw, bh);
-    if (v.cross) g.fillRect(-hw, top + bh * .52 - rw * .4, hw * 2, rw * .8);
-    g.fillStyle = 'rgba(0,0,0,.2)'; g.fillRect(-hw, top, hw * 2, s * .05);
-    rr(g, -lw, lidTop, lw * 2, lh, s * .045); g.fillStyle = v.lid; g.fill();
-    g.fillStyle = v.rib; g.fillRect(-rw / 2, lidTop, rw, lh);
-    g.fillStyle = 'rgba(255,255,255,.26)'; rr(g, -lw + s * .035, lidTop + s * .025, lw * 2 - s * .07, s * .03, s * .015); g.fill();
+    satin(g, -rw / 2, rw / 2, top, top + bh, v);
+    if (v.cross) satin(g, -hw, hw, top + bh * .52 - rw * .4, top + bh * .52 + rw * .4, v, true);
+    /* shadow the lid casts on the box */
+    gr = g.createLinearGradient(0, top, 0, top + s * .09); gr.addColorStop(0, 'rgba(0,0,0,.34)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(-hw, top, hw * 2, s * .09);
+    /* the lid */
+    gr = g.createLinearGradient(0, lidTop, 0, lidTop + lh); gr.addColorStop(0, tone(v.lid, .28)); gr.addColorStop(1, tone(v.lid, -.16));
+    rr(g, -lw, lidTop, lw * 2, lh, s * .045); g.fillStyle = gr; g.fill();
+    satin(g, -rw / 2, rw / 2, lidTop, lidTop + lh, v);
+    g.fillStyle = 'rgba(255,255,255,.34)'; rr(g, -lw + s * .035, lidTop + s * .022, lw * 2 - s * .07, s * .028, s * .014); g.fill();
+    /* the bow: two full loops with a darker inside, two tails and a knot */
     for (let k = -1; k <= 1; k += 2) {
+      g.beginPath(); g.moveTo(k * s * .02, lidTop + s * .01); g.lineTo(k * s * .2, lidTop + s * .13); g.lineTo(k * s * .11, lidTop + s * .14); g.lineTo(k * s * .0, lidTop + s * .04); g.closePath(); g.fillStyle = v.ribD; g.fill();
       g.beginPath(); g.moveTo(0, lidTop);
-      g.bezierCurveTo(k * s * .06, lidTop - s * .26, k * s * .36, lidTop - s * .24, k * s * .3, lidTop - s * .06);
-      g.bezierCurveTo(k * s * .26, lidTop + s * .01, k * s * .1, lidTop - s * .01, 0, lidTop);
-      g.fillStyle = v.rib; g.fill();
+      g.bezierCurveTo(k * s * .06, lidTop - s * .28, k * s * .4, lidTop - s * .27, k * s * .33, lidTop - s * .06);
+      g.bezierCurveTo(k * s * .28, lidTop + s * .02, k * s * .1, lidTop - s * .005, 0, lidTop);
+      gr = g.createLinearGradient(0, lidTop - s * .26, 0, lidTop); gr.addColorStop(0, tone(v.rib, .45)); gr.addColorStop(.55, v.rib); gr.addColorStop(1, v.ribD); g.fillStyle = gr; g.fill();
       g.beginPath(); g.moveTo(k * s * .07, lidTop - s * .05);
-      g.bezierCurveTo(k * s * .1, lidTop - s * .16, k * s * .25, lidTop - s * .155, k * s * .225, lidTop - s * .075);
-      g.bezierCurveTo(k * s * .2, lidTop - s * .04, k * s * .12, lidTop - s * .04, k * s * .07, lidTop - s * .05);
-      g.fillStyle = v.ribD; g.fill();
+      g.bezierCurveTo(k * s * .1, lidTop - s * .17, k * s * .27, lidTop - s * .165, k * s * .24, lidTop - s * .075);
+      g.bezierCurveTo(k * s * .21, lidTop - s * .035, k * s * .12, lidTop - s * .035, k * s * .07, lidTop - s * .05);
+      g.fillStyle = tone(v.ribD, -.2); g.fill();
     }
-    rr(g, -s * .055, lidTop - s * .095, s * .11, s * .11, s * .035); g.fillStyle = v.rib; g.fill();
-    g.strokeStyle = v.ribD; g.lineWidth = Math.max(1, s * .02); g.stroke();
+    rr(g, -s * .06, lidTop - s * .1, s * .12, s * .12, s * .04); gr = g.createLinearGradient(0, lidTop - s * .1, 0, lidTop + s * .02); gr.addColorStop(0, tone(v.rib, .5)); gr.addColorStop(1, v.ribD); g.fillStyle = gr; g.fill();
+    g.strokeStyle = tone(v.ribD, -.25); g.lineWidth = Math.max(1, s * .016); g.stroke();
   }
   function drawCoal(g, s) {
     const O = [[-.43, -.1], [-.25, -.4], [.08, -.46], [.38, -.28], [.47, .05], [.3, .36], [-.06, .45], [-.37, .29]];
@@ -1079,14 +1106,26 @@
     const lid = h * .3, pad = Math.min(h * .06, w * .12), r = Math.min(h * .14, w * .3);
     if (rc == null) { rc = x + w / 2; rw = Math.min(h * .44, w * .46); }
     const b0 = Math.max(x + pad, rc - rw / 2), b1 = Math.min(x + w - pad, rc + rw / 2), l0 = Math.max(x, rc - rw / 2), l1 = Math.min(x + w, rc + rw / 2);
-    rr(g, x + pad, y + lid * .5, w - pad * 2, h - lid * .5, r); g.fillStyle = v.box; g.fill();
-    if (w > r * 3) { g.fillStyle = 'rgba(0,0,0,.14)'; g.fillRect(x + pad + r, y + h * .84, w - pad * 2 - r * 2, h * .16); }
-    if (b1 > b0) { g.fillStyle = v.rib; g.fillRect(b0, y + lid * .5, b1 - b0, h - lid * .5); }
-    g.fillStyle = 'rgba(0,0,0,.2)'; g.fillRect(x + pad, y + lid, w - pad * 2, h * .08);
-    rr(g, x, y, w, lid, lid * .3); g.fillStyle = v.lid; g.fill();
-    if (l1 > l0) { g.fillStyle = v.rib; g.fillRect(l0, y, l1 - l0, lid); }
-    if (w > lid) { g.fillStyle = 'rgba(255,255,255,.28)'; g.fillRect(x + lid * .3, y + lid * .16, w - lid * .6, Math.max(1, lid * .14)); }
-    if (flash > 0) { const a = g.globalAlpha; g.globalAlpha = a * Math.min(1, flash) * .65; rr(g, x, y, w, h, r); g.fillStyle = '#fff'; g.fill(); g.globalAlpha = a; }
+    const by = y + lid * .5, bhh = h - lid * .5;
+    /* the box, lit from above */
+    let gr = g.createLinearGradient(0, by, 0, by + bhh); gr.addColorStop(0, tone(v.box, .16)); gr.addColorStop(.55, v.box); gr.addColorStop(1, tone(v.box, -.32));
+    rr(g, x + pad, by, w - pad * 2, bhh, r); g.fillStyle = gr; g.fill();
+    if (w - pad * 2 > h * .5) {
+      g.save(); g.clip();
+      if (v.pat === 'stripes') { g.strokeStyle = 'rgba(255,255,255,.2)'; g.lineWidth = h * .11; g.beginPath(); for (let sx = x - h; sx < x + w; sx += h * .42) { g.moveTo(sx, y + h); g.lineTo(sx + h, y); } g.stroke(); }
+      else if (v.pat === 'dots') { g.fillStyle = 'rgba(255,255,255,.34)'; const st = h * .34; for (let rw2 = 0, dy = by + st * .9; dy < y + h; dy += st, rw2++) for (let dx = x + pad + (rw2 % 2 ? st : st * .5); dx < x + w - pad; dx += st) { g.beginPath(); g.arc(dx, dy, h * .055, 0, TAU); g.fill(); } }
+      g.fillStyle = 'rgba(255,255,255,.1)'; g.fillRect(x + pad, by, Math.min(w * .08, h * .3), bhh);
+      g.restore();
+    }
+    if (b1 > b0) satin(g, b0, b1, by, y + h, v);
+    /* shadow under the lid */
+    gr = g.createLinearGradient(0, y + lid, 0, y + lid + h * .16); gr.addColorStop(0, 'rgba(0,0,0,.36)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(x + pad, y + lid, w - pad * 2, h * .16);
+    /* the lid */
+    gr = g.createLinearGradient(0, y, 0, y + lid); gr.addColorStop(0, tone(v.lid, .3)); gr.addColorStop(1, tone(v.lid, -.14));
+    rr(g, x, y, w, lid, lid * .3); g.fillStyle = gr; g.fill();
+    if (l1 > l0) satin(g, l0, l1, y, y + lid, v);
+    if (w > lid) { g.fillStyle = 'rgba(255,255,255,.34)'; g.fillRect(x + lid * .3, y + lid * .14, w - lid * .6, Math.max(1, lid * .13)); }
+    if (flash > 0) { const al = g.globalAlpha; g.globalAlpha = al * Math.min(1, flash) * .65; rr(g, x, y, w, h, r); g.fillStyle = '#fff'; g.fill(); g.globalAlpha = al; }
   }
   /* the Gift Tower tile picture */
   function artStack(g, W, H) {
