@@ -591,19 +591,20 @@ window.App = (function () {
     whoFirst = first;
     /* a phone that just joined has nothing saved yet: wait for the group instead of showing an empty list */
     whoLoading = !App.names.length && !!App.space() && !!App.cloud && !App.cloud.synced();
-    if (whoLoading) { whoApi = ui.sheet({ title: 'Getting the group…', locked: true, cls: 'who', html: '<p class="muted">One moment. If this takes long, check the Wi-Fi.</p>', onClose() { whoApi = null; } }); return; }
+    const page = first === true ? ' who-first' : '';      /* brand new here: the picker is a whole page, not a pop-up */
+    if (whoLoading) { whoApi = ui.sheet({ title: 'Getting the group…', locked: true, cls: 'who' + page, html: '<p class="muted">One moment. If this takes long, check the Wi-Fi.</p>', onClose() { whoApi = null; } }); return; }
     const picRow = () => ui.avatar(ME, 68) + '<div class="col grow"><b class="me-name">' + App.esc(ME) + '</b><div class="row me-acts">' +
       '<button class="btn sm primary" id="picPick">' + App.icon('camera', 16) + (App.pics.has(ME) ? 'Change picture' : 'Add a picture') + '</button>' +
       (App.pics.has(ME) ? '<button class="btn sm ghost" id="picClear">Remove</button>' : '') + '</div></div>';
     whoApi = ui.sheet({
-      title: picker ? (first === 'switch' ? 'Switch person' : "Who's using this?") : 'Your profile', locked: picker && first !== 'switch', cls: 'who', onClose() { whoApi = null; },
+      title: picker ? (first === 'switch' ? 'Switch person' : 'Who are you?') : 'Your profile', locked: picker && first !== 'switch', cls: 'who' + page, onClose() { whoApi = null; },
       html: mine
         ? '<div class="me-pic" id="picRow">' + picRow() + '</div><input type="file" accept="image/*" id="picFile" hidden>' +
           '<button class="who-orn" id="whoOrn"><span class="who-orn-b"></span><span><b>Design my ornament</b><small>Styles, a photo, or draw your own</small></span></button>' +
           '<div class="row gap who-row">' + (App.cloud ? '<button class="btn grow" id="whoGroups">' + App.icon('users', 18) + (App.space() ? 'Group' : 'Go online') + '</button>' : '') +
           '<button class="btn grow" id="whoSet">' + App.icon('sliders', 18) + 'Settings</button></div>' +
           '<button class="btn ghost block who-switch" id="whoSwitch">Switch person</button>'
-        : '<p class="muted">' + (!App.names.length ? 'Nobody is in this group yet. Add your name to start.' : locks ? 'Pick your name. A name with a lock is already taken.' : 'Pick your name. You can change your own list and see everyone else\'s.') + '</p>' +
+        : '<p class="muted">' + (!App.names.length ? 'Nobody is in this group yet. Add your name to start.' : locks ? 'Pick your name. A name marked Taken already belongs to someone.' : 'Pick your name. You can change your own list and see everyone else\'s.') + '</p>' +
           (App.names.length ? '<div class="pp-rail"></div>' : '') + '<div class="pp-grid">' +
           App.names.map((n, i) => { const p = App.person(n), size = App.names.length <= 4 ? 78 : App.names.length <= 8 ? 66 : 56, tag = n === ME ? 'You' : locks && App.lock.has(n) ? 'Taken' : 'Free';
             return '<button class="orn pp-orn who-btn' + (n === ME ? ' me' : '') + '" data-name="' + App.esc(n) + '" data-n="' + App.esc(n) + '" style="--size:' + size + 'px;--c1:' + p.c[0] + ';--c2:' + p.c[1] + ';--c3:' + p.c[2] + ';--len:' + [8, 22, 12, 26, 6, 18][i % 6] + 'px;--dur:' + (4.2 + (i * 37 % 17) / 10).toFixed(1) + 's">' +

@@ -78,6 +78,13 @@
     .nk-more{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
     .nk-chip{min-height:40px;padding:0 14px;border-radius:999px;background:var(--surface2);border:1px solid var(--line);font-weight:600;font-size:14px}
     .nk-chip.on{background:var(--gold);border-color:var(--gold);color:var(--gold-ink)}
+    .sheet-back:has(.who-first){background:rgba(4,10,24,.8)}
+    .sheet.who-first{max-width:none;width:100%;height:100%;max-height:none;border:0;border-radius:0;background:none;justify-content:center;transform:none!important;opacity:1!important;padding:max(18px,env(safe-area-inset-top)) 0 max(14px,env(safe-area-inset-bottom))}
+    .sheet.who-first::before{display:none}
+    .sheet.who-first .sheet-head{justify-content:center;padding:0 20px 2px;width:100%;max-width:560px;margin:0 auto}
+    .sheet.who-first .sheet-head h2{font-size:clamp(28px,8vw,36px);text-align:center}
+    .sheet.who-first .sheet-body{flex:0 1 auto;width:100%;max-width:560px;margin:0 auto}
+    .sheet.who-first .sheet-body>.muted{text-align:center;margin-bottom:6px}
     .mu-about{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:8px 14px;border-radius:16px;background:linear-gradient(90deg,rgba(47,154,100,.32),rgba(47,154,100,.1));border:1px solid rgba(95,227,161,.45);text-align:left;margin-bottom:12px}
     .mu-about svg{flex:none;color:#5fe3a1}.mu-about span{flex:1;min-width:0}.mu-about b{display:block;font-weight:700}.mu-about small{display:block;font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .mu-about em{font-style:normal;flex:none;font-size:11.5px;font-weight:700;color:var(--gold-ink);background:var(--gold);border-radius:999px;padding:2px 8px}
