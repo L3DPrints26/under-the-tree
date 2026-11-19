@@ -229,7 +229,7 @@
     const b = it.backup || {};
     A.ui.sheet({
       title: editing ? 'Edit wish' : 'Add a wish', wide: true,
-      html: '<label class="field"><span>What is it?</span><input class="input" id="fName" maxlength="90" value="' + esc(it.name) + '" placeholder="Wireless headphones"></label>' +
+      html: (A.linkFill ? A.linkFill.boxHTML() : '') + '<label class="field"><span>What is it?</span><input class="input" id="fName" maxlength="90" value="' + esc(it.name) + '" placeholder="Wireless headphones"></label>' +
         '<label class="field"><span>About how much?</span><input class="input" id="fPrice" maxlength="40" value="' + esc(it.price) + '" placeholder="$40" inputmode="text"></label>' +
         '<div class="field"><span class="label">Photos</span><div class="drop" id="drop"></div><input type="file" id="fFile" accept="image/*" multiple hidden></div>' +
         '<div class="field"><span class="label">Links</span><div id="fLinks"></div><button type="button" class="btn sm" id="addLink">' + A.icon('plus', 16) + 'Add another link</button></div>' +
@@ -271,6 +271,8 @@
         $('#addLink', el).onclick = () => { readLinks(); links.push(''); drawLinks(); const ins = $$('input', linksEl); ins[ins.length - 1].focus(); };
         $('#fIcons', el).onclick = e => { const x = e.target.closest('[data-ic]'); if (!x) return; icon = x.dataset.ic; $$('#fIcons button', el).forEach(q => q.classList.toggle('on', q === x)); };
         drawPhotos(); drawLinks();
+        if (A.linkFill) A.linkFill.wire({ el: el, addPhoto: pid => { photos.push({ id: pid }); drawPhotos(); },
+          addLink: u => { readLinks(); if (links.indexOf(u) < 0) { if (links.length === 1 && !links[0].trim()) links[0] = u; else links.push(u); } drawLinks(); } });
         const val = s => $(s, el).value.trim();
         $('#fSave', el).onclick = () => {
           const name = val('#fName'); if (!name) { $('#fName', el).focus(); A.ui.toast('Give it a name first.'); return; }

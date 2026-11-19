@@ -8,7 +8,7 @@
   const A = window.App, $ = A.$, $$ = A.$$, esc = A.esc;
 
   A.css(`
-    .rv-chip{display:inline-flex;align-items:center;gap:8px;min-height:40px;margin-top:10px;padding:0 16px;border-radius:999px;background:linear-gradient(#f7dc92,#d9a93a);color:#3a2a12;font-weight:700;font-size:14.5px;box-shadow:0 6px 16px rgba(0,0,0,.35)}
+    .rv-chip{display:flex;width:fit-content;align-items:center;gap:8px;min-height:40px;margin:10px auto 0;padding:0 16px;border-radius:999px;background:linear-gradient(#f7dc92,#d9a93a);color:#3a2a12;font-weight:700;font-size:14.5px;box-shadow:0 6px 16px rgba(0,0,0,.35)}
     .rv-chip svg{flex:none}
     .rv-chip.wait{background:var(--surface2);color:#fff;border:1px solid var(--line2)}
     .rv-people{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 4px}
