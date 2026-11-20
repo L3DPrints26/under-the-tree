@@ -85,6 +85,20 @@
     .sheet.who-first .sheet-head h2{font-size:clamp(28px,8vw,36px);text-align:center}
     .sheet.who-first .sheet-body{flex:0 1 auto;width:100%;max-width:560px;margin:0 auto}
     .sheet.who-first .sheet-body>.muted{text-align:center;margin-bottom:6px}
+    .iv-code{border-radius:18px;background:var(--gold);color:var(--gold-ink);text-align:center;padding:12px 14px 14px}
+    .iv-code small{display:block;font-size:13px;font-weight:600;opacity:.8}
+    .iv-code b{display:block;font-family:var(--display);font-weight:600;font-size:clamp(28px,9vw,38px);letter-spacing:.08em;line-height:1.1;margin-top:2px}
+    .iv-main{display:flex;align-items:center;gap:12px;width:100%;min-height:72px;margin-top:10px;padding:12px 16px;border-radius:18px;text-align:left;color:#fff;background:linear-gradient(#2f9a64,#14573a);box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 8px 18px rgba(0,0,0,.3)}
+    .iv-main:active{transform:scale(.98)}
+    .iv-main svg{flex:none}.iv-main b{display:block;font-family:var(--display);font-weight:600;font-size:20px;line-height:1.15}.iv-main small{display:block;font-size:13.5px;opacity:.9;margin-top:1px}
+    .iv-two{margin-top:10px}
+    a.mu-sq{text-decoration:none}
+    .mu-sq.iv-red{background:#5a1422;border-color:#a8283c}.mu-sq.iv-green{background:#123f2b;border-color:#2f8a5c}
+    .mu-sq.iv-red small,.mu-sq.iv-green small,.iv-two .mu-sq small{color:#c9d6ea}
+    .iv-note{font-size:13px;margin-top:12px;text-align:center}
+    .iv-big{text-align:center;padding:6px 0 4px}
+    .iv-big small{display:block;font-size:14px;font-weight:600;color:var(--gold)}
+    .iv-big b{display:block;font-family:var(--display);font-weight:600;font-size:clamp(54px,19vw,92px);letter-spacing:.1em;line-height:1.08;color:#fff;margin:6px 0 10px}
     .mu-about{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:8px 14px;border-radius:16px;background:linear-gradient(90deg,rgba(47,154,100,.32),rgba(47,154,100,.1));border:1px solid rgba(95,227,161,.45);text-align:left;margin-bottom:12px}
     .mu-about svg{flex:none;color:#5fe3a1}.mu-about span{flex:1;min-width:0}.mu-about b{display:block;font-weight:700}.mu-about small{display:block;font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .mu-about em{font-style:normal;flex:none;font-size:11.5px;font-weight:700;color:var(--gold-ink);background:var(--gold);border-radius:999px;padding:2px 8px}

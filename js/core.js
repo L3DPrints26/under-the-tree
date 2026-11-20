@@ -553,7 +553,7 @@ window.App = (function () {
       title: inGroup ? (g.name || 'Menu') : 'Menu', cls: 'menu',
       html: '<div class="mu">' +
         /* the main thing: getting people in. One wide gold banner with the code on it */
-        (inGroup ? '<div class="mu-a"><button class="mu-hero" id="mnInvite"><span class="mu-hero-t"><b>Invite people</b><small>Tap to send the code</small></span><span class="mu-code">' + C.pretty(App.space()) + '</span></button>' +
+        (inGroup ? '<div class="mu-a"><button class="mu-hero" id="mnInvite"><span class="mu-hero-t"><b>Invite people</b><small>Send a link or the code</small></span><span class="mu-code">' + C.pretty(App.space()) + '</span></button>' +
           '<div class="mu-two"><button class="mu-sq blue" id="mnPeople">' + App.icon('users', 24) + '<b>People</b><small>' + App.names.length + ' here' + (on ? ', ' + on + ' online' : '') + '</small></button>' +
           '<button class="mu-sq purple" id="mnGroups">' + App.icon('swap', 24) + '<b>My groups</b><small>Switch or leave</small></button></div></div>' : '') +
         '<div class="mu-b">' +

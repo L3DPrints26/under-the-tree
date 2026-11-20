@@ -354,11 +354,35 @@
       }
     });
   }
+  /* Invite people: a sheet of ways to do it. The link opens the join page with the code already typed in,
+     so the other person only taps Join. The plain code is there for a watch, or for saying out loud. */
   function invite(id, name) {
-    const link = inviteLink(id), text = 'Join "' + name + '" on Under the Tree. The code is ' + pretty(id) + '.';
-    const copy = () => { const t = link ? text + ' ' + link : text; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => A.ui.toast('Invite copied. Paste it in a text or email.'), () => A.ui.toast('The code is ' + pretty(id) + '.')); };
-    if (navigator.share) navigator.share(link ? { title: 'Under the Tree', text, url: link } : { title: 'Under the Tree', text }).catch(e => { if (!e || e.name !== 'AbortError') copy(); });
-    else copy();
+    const link = inviteLink(id), code = pretty(id);
+    const text = 'Join "' + name + '" on Under the Tree. Tap the link and the code is already filled in' + (link ? ':' : '. The code is ' + code + '.');
+    const full = link ? text + ' ' + link + ' (code ' + code + ')' : text;
+    const put = (t, ok) => (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => A.ui.toast(ok), () => A.ui.toast('The code is ' + code + '.'));
+    const phone = A.dev === 'phone' || A.dev === 'iPad' || A.dev === 'tablet';
+    A.ui.sheet({
+      title: 'Invite people',
+      html: '<div data-keep><div class="iv-code"><small>The code for ' + esc(name) + '</small><b>' + code + '</b></div>' +
+        (link ? '<button class="iv-main" id="ivSend">' + A.icon('link', 22) + '<span><b>Send a link</b><small>They tap it and the code is already filled in</small></span></button>' : '') +
+        '<div class="mu-two iv-two">' +
+          '<button class="mu-sq blue" id="ivCode">' + A.icon('tag', 22) + '<b>Copy the code</b><small>To type on a watch</small></button>' +
+          (link ? '<button class="mu-sq purple" id="ivLink">' + A.icon('link', 22) + '<b>Copy the link</b><small>Paste it anywhere</small></button>' : '') +
+          (link ? '<a class="mu-sq iv-red" id="ivText" href="' + esc((phone ? 'sms:?&body=' : 'mailto:?subject=' + encodeURIComponent('Join ' + name + ' on Under the Tree') + '&body=') + encodeURIComponent(full)) + '">' + A.icon(phone ? 'phone' : 'pencil', 22) + '<b>' + (phone ? 'Text it' : 'Email it') + '</b><small>Opens a new message</small></a>' : '') +
+          '<button class="mu-sq iv-green" id="ivShow">' + A.icon('eye', 22) + '<b>Show it big</b><small>To read out loud</small></button>' +
+        '</div><p class="muted iv-note">Anyone with the code can join and see the lists, so only give it to people in the group.</p></div>',
+      onMount(el) {
+        const send = $('#ivSend', el);
+        if (send) send.onclick = () => {
+          if (navigator.share) navigator.share({ title: 'Under the Tree', text, url: link }).catch(e => { if (!e || e.name !== 'AbortError') put(full, 'Invite copied. Paste it in a text or email.'); });
+          else put(full, 'Invite copied. Paste it in a text or email.');
+        };
+        $('#ivCode', el).onclick = () => put(code, 'Code copied.');
+        const lk = $('#ivLink', el); if (lk) lk.onclick = () => put(link, 'Link copied.');
+        $('#ivShow', el).onclick = () => A.ui.sheet({ title: name, html: '<div class="iv-big" data-keep><small>Code to join</small><b>' + code.split('-').join('<br>') + '</b><p class="muted">Open the app, tap I have a code, and type this.</p></div>' });
+      }
+    });
   }
   function leaveSheet(id, name) {
     A.ui.sheet({
