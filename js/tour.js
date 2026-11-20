@@ -144,8 +144,10 @@
     if (!/^#?\/?$/.test(location.hash) || !$('.orn')) return;
     start();
   }
-  A.on('cloud', () => setTimeout(maybe, 2500));
-  setTimeout(maybe, 3500);
+  A.on('cloud', () => setTimeout(maybe, 600));
+  /* keep looking until it has run: the tree can show up at any moment (after joining, after picking a name),
+     and the tutorial should start right then, not at the next change in the group */
+  if (!raw.get('toured', false)) { const look = setInterval(() => { if (live || raw.get('toured', false)) { clearInterval(look); return; } maybe(); }, 500); }
 
   A.tour = { show: show, big: big, setBig: setBig, running: () => !!live };
 })();

@@ -65,9 +65,9 @@
         '<div class="oe2-row" data-inks></div><label class="oe2-range">Size<input type="range" id="oeSize" min="3" max="70" value="14"></label></div>' +
       '<div class="oe2-pane" data-p="stamp"><div class="oe2-row">' + STAMPS.map(s => '<button class="oe2-stamp" data-stamp="' + s + '" aria-label="' + s + ' stamp">' + A.icon(s, 24) + '</button>').join('') + '</div>' +
         '<div class="oe2-row" data-inks></div><label class="oe2-range">Size<input type="range" id="oeStampSize" min="36" max="220" value="90"></label></div>' +
-      '<div class="oe2-pane" data-p="photo"><div class="oe2-row"><button class="btn sm primary" id="oePick">' + A.icon('camera', 16) + 'Choose a photo</button><button class="oe2-chip" id="oeNoPhoto">Take the photo off</button><input type="file" accept="image/*" id="oeFile" hidden></div>' +
-        '<label class="oe2-range">Zoom<input type="range" id="oeZoom" min="1" max="4" step="0.01" value="1"></label><label class="oe2-range">Turn<input type="range" id="oeRot" min="-180" max="180" step="1" value="0"></label>' +
-        '<p class="muted" style="font-size:13px">Drag the ball to move the photo. Draw and stamp on top of it.</p></div>' +
+      '<div class="oe2-pane" data-p="photo"><div class="oe2-row"><button class="btn sm primary" id="oePick">' + A.icon('camera', 16) + 'Choose a photo</button><button class="oe2-chip" id="oeFit">Fit again</button><button class="oe2-chip" id="oeNoPhoto">Take the photo off</button><input type="file" accept="image/*" id="oeFile" hidden></div>' +
+        '<label class="oe2-range">Zoom<input type="range" id="oeZoom" min="1" max="6" step="0.01" value="1"></label><label class="oe2-range">Turn<input type="range" id="oeRot" min="-180" max="180" step="1" value="0"></label>' +
+        '<p class="muted" style="font-size:13px">One finger slides the photo. Two fingers zoom and turn it, on any tab. Draw and stamp on top of it.</p></div>' +
       '<div class="oe2-bar"><button class="btn" id="oeUndo">Undo</button><button class="btn" id="oeRedo">Redo</button><button class="btn" id="oeClear">Start over</button><button class="btn" id="oeBand">Hide name</button></div></div>';
     document.body.appendChild(root);
     const inks = INK.map(c => '<button class="oe2-sw" data-ink="' + c + '" style="background:' + c + '" aria-label="Color"></button>').join('') + '<label class="oe2-sw pick" aria-label="Any color"><input type="color" value="#ff5a5a"></label>';
@@ -123,22 +123,55 @@
       const im = new Image(); im.onload = () => { stampImgs[key] = im; draw(im); };
       im.src = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 24 24" fill="none" stroke="' + ink + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + A.icons[stamp] + '</svg>');
     };
-    let down = null;
+    /* Touch. One finger draws, stamps, or (on the Photo tab) slides the photo.
+       Two fingers always hold the photo, on any tab: pinch to zoom, twist to turn, drag both to move. */
+    let down = null, stroke = false, moved = false, grip = null;
+    const pts = new Map();                                    /* fingers on the ball right now */
+    const two = () => { const v = Array.from(pts.values()), a = v[0], b = v[1]; return { m: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], d: Math.hypot(b[0] - a[0], b[1] - a[1]) || 1, a: Math.atan2(b[1] - a[1], b[0] - a[0]) }; };
+    const showPhoto = () => { $('#oeZoom', root).value = zoom; $('#oeRot', root).value = rot; };
+    /* zoom by s and turn by t, keeping the part of the photo that was under c0 under c1 (so it follows the fingers) */
+    const pinch = (c0, c1, s, t) => {
+      const z = Math.min(6, Math.max(1, zoom * s)); s = z / zoom; zoom = z;
+      const vx = c0[0] - (N / 2 + dx), vy = c0[1] - (N / 2 + dy), co = Math.cos(t), si = Math.sin(t);
+      dx = c1[0] - s * (co * vx - si * vy) - N / 2; dy = c1[1] - s * (si * vx + co * vy) - N / 2;
+      rot = ((rot + t * 180 / Math.PI + 540) % 360) - 180;
+      showPhoto(); render();
+    };
     ball.addEventListener('pointerdown', e => {
       if (!custom) return; e.preventDefault(); try { ball.setPointerCapture(e.pointerId); } catch (x) {}
-      down = at(e);
-      if (pane === 'photo') return;
-      snap();
-      if (pane === 'stamp') { putStamp(down); down = null; return; }
+      pts.set(e.pointerId, at(e));
+      if (pts.size === 2) {
+        /* a second finger landed: take back whatever the first one started drawing, and hold the photo instead */
+        if (stroke) { const last = undo.pop(); if (last) L.putImageData(last, 0, 0); stroke = false; render(); }
+        down = null; grip = photo ? two() : null; return;
+      }
+      if (pts.size > 2) return;
+      down = at(e); moved = false;
+      if (pane === 'photo' || pane === 'stamp') return;         /* a stamp lands when the finger lifts */
+      snap(); stroke = true;
       seg(down, down); render();
     });
     ball.addEventListener('pointermove', e => {
-      if (!down) return; const p = at(e);
+      if (!pts.has(e.pointerId)) return;
+      const p = at(e); pts.set(e.pointerId, p);
+      if (pts.size >= 2) {
+        if (grip && photo) { const now = two(); let t = now.a - grip.a; if (t > Math.PI) t -= 2 * Math.PI; if (t < -Math.PI) t += 2 * Math.PI; pinch(grip.m, now.m, now.d / grip.d, t); grip = now; }
+        return;
+      }
+      if (!down) return;
+      if (Math.hypot(p[0] - down[0], p[1] - down[1]) > 1) moved = true;
       if (pane === 'photo') { if (photo) { dx += p[0] - down[0]; dy += p[1] - down[1]; render(); } }
-      else { seg(down, p); render(); }
+      else if (pane !== 'stamp') { seg(down, p); render(); }
       down = p;
     });
-    const up = () => { down = null; }; ball.addEventListener('pointerup', up); ball.addEventListener('pointercancel', up);
+    const up = e => {
+      const one = pts.size === 1 && pts.has(e.pointerId);
+      if (one && down && pane === 'stamp' && e.type === 'pointerup') { snap(); putStamp(down); }
+      pts.delete(e.pointerId); grip = null; down = null; stroke = false;
+    };
+    ball.addEventListener('pointerup', up); ball.addEventListener('pointercancel', up);
+    /* a mouse wheel or trackpad zooms the photo where the pointer is */
+    ball.addEventListener('wheel', e => { if (!custom || !photo) return; e.preventDefault(); const p = at(e); pinch(p, p, Math.exp(-e.deltaY * 0.0015), 0); }, { passive: false });
 
     /* ----- controls ----- */
     $$('.oe2-tabs button', root).forEach(b => { b.onclick = () => go(b.dataset.t); });
@@ -159,6 +192,7 @@
     const file = $('#oeFile', root);
     $('#oePick', root).onclick = () => file.click();
     $('#oeNoPhoto', root).onclick = () => { photo = null; render(); };
+    $('#oeFit', root).onclick = () => { zoom = 1; rot = 0; dx = dy = 0; showPhoto(); render(); };
     file.onchange = () => { const f = file.files[0]; file.value = ''; if (!f || !/^image\//.test(f.type)) return; const url = URL.createObjectURL(f), im = new Image();
       im.onload = () => { photo = im; flat = ''; zoom = 1; rot = 0; dx = dy = 0; $('#oeZoom', root).value = 1; $('#oeRot', root).value = 0; custom = true; paint(); URL.revokeObjectURL(url); }; im.onerror = () => A.ui.toast('That file is not a picture.'); im.src = url; };
     $('#oeZoom', root).oninput = e => { zoom = +e.target.value; render(); };
