@@ -356,29 +356,39 @@
       }
     });
   }
-  /* Invite people: a sheet of ways to do it. The link opens the join page with the code already typed in,
-     so the other person only taps Join. The plain code is there for a watch, or for saying out loud. */
+  /* Invite people: a sheet of ways to do it. The link opens the app (or the website) with the code already
+     typed in and joins by itself, so the other person only picks their name. The plain code is there for a watch,
+     or for saying out loud. */
+  const SHARE_ICONS = {
+    messages: '<svg viewBox="0 0 48 48" width="46" height="46" aria-hidden="true"><rect width="48" height="48" rx="11" fill="#34c759"/><path d="M24 11c-8.3 0-15 5.2-15 11.7 0 3.7 2.2 7 5.7 9.1-.3 1.6-1.1 3.2-2.4 4.6 2.7-.2 5.1-1.2 6.9-2.6 1.5.4 3.1.6 4.8.6 8.3 0 15-5.2 15-11.7S32.300 11 24 11z" fill="#fff"/></svg>',
+    mail: '<svg viewBox="0 0 48 48" width="46" height="46" aria-hidden="true"><rect width="48" height="48" rx="11" fill="#1a8cff"/><rect x="9" y="14" width="30" height="21" rx="4" fill="#fff"/><path d="M11 17.500l13 9.500 13-9.500" fill="none" stroke="#1a8cff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    more: '<svg viewBox="0 0 48 48" width="46" height="46" aria-hidden="true"><rect width="48" height="48" rx="11" fill="#5b6b85"/><circle cx="14" cy="24" r="3.600" fill="#fff"/><circle cx="24" cy="24" r="3.600" fill="#fff"/><circle cx="34" cy="24" r="3.600" fill="#fff"/></svg>'
+  };
   function invite(id, name) {
     const link = inviteLink(id), code = pretty(id);
     const text = 'Join "' + name + '" on Under the Tree. Tap the link and the code is already filled in' + (link ? ':' : '. The code is ' + code + '.');
     const full = link ? text + ' ' + link + ' (code ' + code + ')' : text;
     const put = (t, ok) => (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => A.ui.toast(ok), () => A.ui.toast('The code is ' + code + '.'));
-    const phone = A.dev === 'phone' || A.dev === 'iPad' || A.dev === 'tablet';
+    const handheld = A.dev === 'phone' || A.dev === 'iPad' || A.dev === 'tablet';
     A.ui.sheet({
       title: 'Invite people',
       html: '<div data-keep><div class="iv-code"><small>The code for ' + esc(name) + '</small><b>' + code + '</b></div>' +
-        (link ? '<button class="iv-main" id="ivSend">' + A.icon('link', 22) + '<span><b>Send a link</b><small>They tap it and the code is already filled in</small></span></button>' : '') +
+        '<p class="iv-lead">Send the invite. They tap the link and the code is already in, so all they pick is their name.</p>' +
+        '<div class="iv-row">' +
+          (handheld ? '<a class="iv-app" id="ivMsg" href="' + esc('sms:&body=' + encodeURIComponent(full)) + '">' + SHARE_ICONS.messages + '<span>Messages</span></a>' : '') +
+          '<a class="iv-app" id="ivMail" href="' + esc('mailto:?subject=' + encodeURIComponent('Join ' + name + ' on Under the Tree') + '&body=' + encodeURIComponent(full)) + '">' + SHARE_ICONS.mail + '<span>Mail</span></a>' +
+          '<button class="iv-app" id="ivMore" type="button">' + SHARE_ICONS.more + '<span>More</span></button>' +
+        '</div>' +
         '<div class="mu-two iv-two">' +
           '<button class="mu-sq blue" id="ivCode">' + A.icon('tag', 22) + '<b>Copy the code</b><small>To type on a watch</small></button>' +
           (link ? '<button class="mu-sq purple" id="ivLink">' + A.icon('link', 22) + '<b>Copy the link</b><small>Paste it anywhere</small></button>' : '') +
-          (link ? '<a class="mu-sq iv-red" id="ivText" href="' + esc((phone ? 'sms:?&body=' : 'mailto:?subject=' + encodeURIComponent('Join ' + name + ' on Under the Tree') + '&body=') + encodeURIComponent(full)) + '">' + A.icon(phone ? 'phone' : 'pencil', 22) + '<b>' + (phone ? 'Text it' : 'Email it') + '</b><small>Opens a new message</small></a>' : '') +
           '<button class="mu-sq iv-green" id="ivShow">' + A.icon('eye', 22) + '<b>Show it big</b><small>To read out loud</small></button>' +
         '</div><p class="muted iv-note">Anyone with the code can join and see the lists, so only give it to people in the group.</p></div>',
       onMount(el) {
-        const send = $('#ivSend', el);
-        if (send) send.onclick = () => {
-          if (navigator.share) navigator.share({ title: 'Under the Tree', text, url: link }).catch(e => { if (!e || e.name !== 'AbortError') put(full, 'Invite copied. Paste it in a text or email.'); });
-          else put(full, 'Invite copied. Paste it in a text or email.');
+        const more = $('#ivMore', el);
+        more.onclick = () => {
+          if (navigator.share) navigator.share({ title: 'Under the Tree', text, url: link || undefined }).catch(e => { if (!e || e.name !== 'AbortError') put(full, 'Invite copied. Paste it anywhere.'); });
+          else put(full, 'Invite copied. Paste it anywhere.');
         };
         $('#ivCode', el).onclick = () => put(code, 'Code copied.');
         const lk = $('#ivLink', el); if (lk) lk.onclick = () => put(link, 'Link copied.');

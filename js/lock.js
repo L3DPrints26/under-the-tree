@@ -187,7 +187,8 @@
       let out = null;
       A.ui.sheet({
         title: name + ' is taken', locked: !!o.stuck,
-        html: '<p class="muted">' + esc(name) + ' is already being used on another phone. If that is you, add a PIN or a password on that phone (menu, then Sign-in options) and type it here.</p>' +
+        html: '<p class="muted">' + esc(name) + ' is already on another device, like the website or another phone. To use it here too:</p>' +
+          '<ol class="lk-steps" style="margin:8px 0 6px;padding-left:20px;line-height:1.5"><li>On that device, open the menu and tap <b>Sign-in options</b>.</li><li>Set a <b>PIN</b> or a <b>password</b>.</li><li>Come back here, tap ' + esc(name) + ' again, and type it.</li></ol>' +
           '<p class="muted" style="margin-top:8px">Picked by the wrong person? ' + helper(name) + '</p>' +
           '<div class="lk-stack">' + (o.stuck ? other : '<button class="btn primary block" data-close>OK</button>') + '</div>',
         onMount(el, close) { const nm = $('[data-notme]', el); if (nm) nm.onclick = () => { out = 'notme'; close(); }; },
@@ -238,13 +239,32 @@
   }
 
   /* someone tapped a name: let them be that person only if it is really theirs */
+  /* The first time a name is picked on a device: explain that a second device (the website and the app are different
+     devices) needs a passcode, and offer to set one now. It is optional, and it only shows once per name. */
+  function passcodeTip(name, tries) {
+    tries = tries || 0;
+    if (hasPin(name) || A.me() !== name || tries > 120) return;
+    const k = 'tip:' + name; if (A.store.raw.get(k, false)) return;
+    /* wait for a pop-up or the tutorial to finish, so they never pile up */
+    if (A.ui.sheetOpen() || (A.tour && A.tour.running && A.tour.running())) { setTimeout(() => passcodeTip(name, tries + 1), 1500); return; }
+    A.store.raw.set(k, true);
+    A.ui.sheet({
+      title: 'Use ' + name + ' on another device?',
+      html: '<p class="muted" data-keep>Your name is saved on this device only. The website and the iPhone app count as two different devices.</p>' +
+        '<p class="muted" style="margin-top:8px" data-keep>To use ' + esc(name) + ' on another one, set a <b style="color:#fff">PIN or password</b> here first. Then type it on the other device. If you only use one device, you can skip this.</p>' +
+        '<div class="lk-stack" style="margin-top:12px"><button class="btn primary block" id="tpSet">Set a PIN or password</button><button class="btn ghost block" data-close>Not now</button></div>',
+      onMount(el, close) { $('#tpSet', el).onclick = () => { close(); setTimeout(optionsSheet, 250); }; }
+    });
+  }
   function choose(name) {
     if (OFF || !A.space()) return Promise.resolve(true);
     /* your own phone lets you back in, unless you turned on Face ID for exactly this */
     if ((mine(name) || signedIn(name)) && !faceOn(name)) return Promise.resolve(true);
     if (hasPin(name) || faceOn(name)) return verify(name).then(r => r === 'ok');
     if (ownerOf(name) && !freed(name)) return taken(name).then(() => false);
-    claim(name); return Promise.resolve(true);                    /* nobody has it: it is yours, nothing to type */
+    claim(name);
+    setTimeout(() => passcodeTip(name), 1200);                   /* say once how to use this name on another device */
+    return Promise.resolve(true);                                /* nobody has it: it is yours, nothing to type */
   }
   /* on opening the app: the name this phone uses must really belong to it */
   let checking = false;

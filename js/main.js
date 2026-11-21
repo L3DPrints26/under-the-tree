@@ -17,6 +17,9 @@
     if (code && A.cloud.groups().some(function (g) { return g.id === code; })) { if (A.space() !== code) { A.store.raw.set('group', code); location.reload(); return; } code = ''; }
     /* test hook: ?auto=1 on an invite link joins without the extra tap */
     if (code && A.qs.has('auto')) { A.cloud.join(code, A.qs.has('bring')).then(function () { location.hash = '#/'; location.reload(); }, function () { A.go('#/start/join/' + code); }); return; }
+    /* An invite link on a new device joins right away, so the person only has to pick their name. On an iPhone's
+       Safari the front page offers "Open in the app" first, because the website and the app are separate devices. */
+    if (code && fresh && !A.iosWeb) { A.ui.toast('Joining the group…'); A.cloud.join(code, false).then(function () { location.hash = '#/'; location.reload(); }, function () { A.go('#/start/join/' + code); }); return; }
     if (fresh) { location.hash = code ? '#/start/join/' + code : '#/start'; A.route(); return; }      /* brand new here: the front page, where you start or join a group */
     if (A.data) A.data.init();
     if (!A.me()) A.ui.who(true); else A.route();

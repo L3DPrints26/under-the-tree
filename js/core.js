@@ -22,6 +22,8 @@ window.App = (function () {
     if (/Android/.test(ua)) return 'tablet';
     return 'computer';
   })();
+  /* Safari on an iPhone or iPad (the website, not the app) */
+  App.iosWeb = /^https?:$/.test(location.protocol) && (/iPhone|iPad|iPod/.test(navigator.userAgent || '') || (/Macintosh/.test(navigator.userAgent || '') && (navigator.maxTouchPoints || 0) > 1));
   App.reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   App.canHover = matchMedia('(hover:hover)').matches;
   App.css = text => { const s = document.createElement('style'); s.textContent = text; document.head.appendChild(s); };
@@ -616,7 +618,7 @@ window.App = (function () {
           '<div class="row gap who-row">' + (App.cloud ? '<button class="btn grow" id="whoGroups">' + App.icon('users', 18) + (App.space() ? 'Group' : 'Go online') + '</button>' : '') +
           '<button class="btn grow" id="whoSet">' + App.icon('sliders', 18) + 'Settings</button></div>' +
           '<button class="btn ghost block who-switch" id="whoSwitch">Switch person</button>'
-        : '<p class="muted">' + (!App.names.length ? 'Nobody is in this group yet. Add your name to start.' : locks ? 'Pick your name. A name marked Taken already belongs to someone.' : 'Pick your name. You can change your own list and see everyone else\'s.') + '</p>' +
+        : '<p class="muted">' + (!App.names.length ? 'Nobody is in this group yet. Add your name to start.' : locks ? 'Pick your name. A name marked Taken is already on another device. Tap it to see how to get it here.' : 'Pick your name. You can change your own list and see everyone else\'s.') + '</p>' +
           (App.names.length ? '<div class="pp-rail"></div>' : '') + '<div class="pp-grid">' +
           App.names.map((n, i) => { const p = App.person(n), size = App.names.length <= 4 ? 78 : App.names.length <= 8 ? 66 : 56, tag = n === ME ? 'You' : locks && App.lock.has(n) ? 'Taken' : 'Free';
             return '<button class="orn pp-orn who-btn' + (n === ME ? ' me' : '') + '" data-name="' + App.esc(n) + '" data-n="' + App.esc(n) + '" style="--size:' + size + 'px;--c1:' + p.c[0] + ';--c2:' + p.c[1] + ';--c3:' + p.c[2] + ';--len:' + [8, 22, 12, 26, 6, 18][i % 6] + 'px;--dur:' + (4.2 + (i * 37 % 17) / 10).toFixed(1) + 's">' +

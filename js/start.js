@@ -94,6 +94,13 @@
     .iv-code{border-radius:18px;background:var(--gold);color:var(--gold-ink);text-align:center;padding:12px 14px 14px}
     .iv-code small{display:block;font-size:13px;font-weight:600;opacity:.8}
     .iv-code b{display:block;font-family:var(--display);font-weight:600;font-size:clamp(28px,9vw,38px);letter-spacing:.08em;line-height:1.1;margin-top:2px}
+    .st-app{display:flex;flex-direction:column;gap:8px;align-items:stretch;text-align:center;padding:12px;margin-bottom:12px;border-radius:18px;background:rgba(245,208,122,.12);border:1px solid rgba(245,208,122,.5)}
+    .st-app b{font-family:var(--display);font-size:19px;color:#fff}.st-app small{font-size:13px;color:#dbe6f4}
+    .st-app a.st-pill{text-decoration:none;display:flex;align-items:center;justify-content:center}
+    .iv-lead{font-size:13.5px;color:var(--muted);text-align:center;margin:10px 4px 8px}
+    .iv-row{display:flex;justify-content:center;gap:22px;margin:4px 0 12px}
+    .iv-app{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:76px;background:none;border:0;color:#fff;font-size:13px;font-weight:600;text-decoration:none;cursor:pointer}
+    .iv-app:active{transform:scale(.94)}
     .iv-main{display:flex;align-items:center;gap:12px;width:100%;min-height:72px;margin-top:10px;padding:12px 16px;border-radius:18px;text-align:left;color:#fff;background:linear-gradient(#2f9a64,#14573a);box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 8px 18px rgba(0,0,0,.3)}
     .iv-main:active{transform:scale(.98)}
     .iv-main svg{flex:none}.iv-main b{display:block;font-family:var(--display);font-weight:600;font-size:20px;line-height:1.15}.iv-main small{display:block;font-size:13.5px;opacity:.9;margin-top:1px}
@@ -183,7 +190,11 @@
           return;
         }
         if (mode === 'join') {
-          act.innerHTML = '<div class="st-form"><input class="input code-in" id="stCode" maxlength="14" placeholder="ABCDE-12345" aria-label="The invite code someone sent you" autocomplete="off" autocapitalize="characters" spellcheck="false" value="' + esc(args[1] ? A.cloud.pretty(String(args[1]).toUpperCase().replace(/[^A-Z0-9]/g, '')) : '') + '">' +
+          const appCode = args[1] ? String(args[1]).toUpperCase().replace(/[^A-Z0-9]/g, '') : '';
+          const openApp = A.iosWeb && appCode ? '<div class="st-app"><b>Got the app?</b><small>The website and the app are separate devices, so open the invite in the app.</small>' +
+            '<a class="st-pill gold" id="stOpen" href="underthetree://join/' + appCode + '">' + A.icon('phone', 20) + 'Open in the app</a>' +
+            '<a class="st-link" href="https://apps.apple.com/us/app/under-the-tree-christmas-list/id6836867384">No app yet? Get it free</a><small>Or join on this website below.</small></div>' : '';
+          act.innerHTML = openApp + '<div class="st-form"><input class="input code-in" id="stCode" maxlength="14" placeholder="ABCDE-12345" aria-label="The invite code someone sent you" autocomplete="off" autocapitalize="characters" spellcheck="false" value="' + esc(args[1] ? A.cloud.pretty(String(args[1]).toUpperCase().replace(/[^A-Z0-9]/g, '')) : '') + '">' +
             '<p class="st-msg" id="stMsg"></p><button class="st-pill gold" id="stGo">' + A.icon('check', 20) + 'Join</button></div><button class="st-link" id="stCancel">Back</button>' + agree();
           const go = $('#stGo', act), inp = $('#stCode', act);
           const run = () => {
