@@ -368,7 +368,7 @@
     cur = { s: s, mine: mine, root: root };
     root.innerHTML = '<div class="adv">' +
       '<header class="adv-head"><div class="adv-ttl"><h1 class="adv-title">Advent calendar</h1><p class="adv-status" aria-live="polite"></p></div>' +
-      '<button type="button" class="btn sm adv-crk">' + App.icon('cracker', 18) + '<span>Pull a cracker</span></button></header>' +
+      '<span style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><button type="button" class="btn sm adv-pz">' + App.icon('trophy', 18) + '<span>Prizes</span></button><button type="button" class="btn sm adv-crk">' + App.icon('cracker', 18) + '<span>Pull a cracker</span></button></span></header>' +
       '<div class="adv-stage"><div class="adv-board"><div class="adv-grid">' +
       ORDER.map((d, i) => doorHTML(d, i, s, mine)).join('') + doorHTML(25, 24, s, mine) +
       '<div class="adv-deco a" aria-hidden="true"><span>' + App.icon('tree') + '</span></div>' +
@@ -376,6 +376,7 @@
       '</div></div></div></div>';
     paintStatus();
     $('.adv-crk', root).addEventListener('click', () => cracker(false));
+    $('.adv-pz', root).addEventListener('click', () => { if (App.prizes) App.prizes.shelf(); });
     $('.adv-grid', root).addEventListener('click', e => {
       const cell = e.target.closest('.adv-cell');
       if (!cell) return;
@@ -445,8 +446,9 @@
         '<div class="adv-day-main"><span class="chip ' + k.chip + '">' + App.icon(k.icon, 14) + k.label + '</span>' +
         '<p class="adv-day-text">' + App.esc(joke ? d.x[0] : d.x) + '</p>' +
         (joke ? '<p class="adv-day-punch">' + App.esc(d.x[1]) + '</p>' : '') + '</div>' +
-        '<button type="button" class="btn primary block" data-close>Close</button></div>',
+        '<div class="pz"></div><button type="button" class="btn primary block" data-close>Close</button></div>',
       onMount(el) {
+        if (App.prizes) App.prizes.panel(el.querySelector('.pz'), season().year, day, d.t === 'm' ? d.x : '');
         if (day !== 25 || !App.fx || !App.fx.confetti) return;
         later(() => { const r = el.getBoundingClientRect(); App.fx.confetti(r.left + r.width / 2, r.top + 40, 140); }, 260);
       }

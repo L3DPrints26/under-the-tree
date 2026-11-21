@@ -63,14 +63,14 @@
         '<div class="oe2-row">' + A.palette.map((c, i) => '<button class="oe2-sw" data-c="' + i + '" style="background:' + c[1] + '" aria-label="Ornament color ' + (i + 1) + '"></button>').join('') + '</div></div>' +
       '<div class="oe2-pane" data-p="draw"><div class="oe2-row">' + TOOLS.map(t => '<button class="oe2-chip" data-tool="' + t[0] + '">' + t[1] + '</button>').join('') + '<button class="oe2-chip" id="oeMirror">Mirror</button><button class="oe2-chip" id="oeFill">Fill</button></div>' +
         '<div class="oe2-row" data-inks></div><label class="oe2-range">Size<input type="range" id="oeSize" min="3" max="70" value="14"></label></div>' +
-      '<div class="oe2-pane" data-p="stamp"><div class="oe2-row">' + STAMPS.map(s => '<button class="oe2-stamp" data-stamp="' + s + '" aria-label="' + s + ' stamp">' + A.icon(s, 24) + '</button>').join('') + '</div>' +
+      '<div class="oe2-pane" data-p="stamp"><div class="oe2-row">' + STAMPS.concat(A.prizes ? A.prizes.stamps() : []).map(s => '<button class="oe2-stamp" data-stamp="' + s + '" aria-label="' + s + ' stamp">' + A.icon(s, 24) + '</button>').join('') + '</div>' +
         '<div class="oe2-row" data-inks></div><label class="oe2-range">Size<input type="range" id="oeStampSize" min="36" max="220" value="90"></label></div>' +
       '<div class="oe2-pane" data-p="photo"><div class="oe2-row"><button class="btn sm primary" id="oePick">' + A.icon('camera', 16) + 'Choose a photo</button><button class="oe2-chip" id="oeFit">Fit again</button><button class="oe2-chip" id="oeNoPhoto">Take the photo off</button><input type="file" accept="image/*" id="oeFile" hidden></div>' +
         '<label class="oe2-range">Zoom<input type="range" id="oeZoom" min="1" max="6" step="0.01" value="1"></label><label class="oe2-range">Turn<input type="range" id="oeRot" min="-180" max="180" step="1" value="0"></label>' +
         '<p class="muted" style="font-size:13px">One finger slides the photo. Two fingers zoom and turn it, on any tab. Draw and stamp on top of it.</p></div>' +
       '<div class="oe2-bar"><button class="btn" id="oeUndo">Undo</button><button class="btn" id="oeRedo">Redo</button><button class="btn" id="oeClear">Start over</button><button class="btn" id="oeBand">Hide name</button></div></div>';
     document.body.appendChild(root);
-    const inks = INK.map(c => '<button class="oe2-sw" data-ink="' + c + '" style="background:' + c + '" aria-label="Color"></button>').join('') + '<label class="oe2-sw pick" aria-label="Any color"><input type="color" value="#ff5a5a"></label>';
+    const inks = INK.concat(A.prizes ? A.prizes.colors() : []).map(c => '<button class="oe2-sw" data-ink="' + c + '" style="background:' + c + '" aria-label="Color"></button>').join('') + '<label class="oe2-sw pick" aria-label="Any color"><input type="color" value="#ff5a5a"></label>';
     $$('[data-inks]', root).forEach(r => { r.innerHTML = inks; });
 
     const ball = $('#oeBall', root), cv = $('#oeCv', root), g = cv.getContext('2d'), over = $('#oeOver', root), nameEl = $('#oeName', root);

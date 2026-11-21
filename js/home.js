@@ -43,7 +43,7 @@
     render(root) {
       const land = matchMedia('(orientation:landscape) and (min-width:560px)').matches;
       /* room taken by the support button and, on Christmas Eve, the Santa banner: the ornaments shrink to fit what is left */
-      const extra = (A.share ? 64 : 0) + (A.tracker && A.tracker.live() ? 100 : 0);
+      const extra = (A.share ? 64 : 0) + (A.tracker && A.tracker.live() ? 100 : 0) + (A.prizes && A.prizes.hasCharms() ? 34 : 0);
       const w = root.clientWidth - (land ? 36 : 28), h = root.clientHeight - extra, now = A.now(), xmasDay = now.getMonth() === 11 && now.getDate() === 25;
       /* any number of people: one row of up to 7 on a wide screen, rows of 3 on a tall one */
       const N = A.names.length, per = land ? (N <= 7 ? Math.max(N, 1) : Math.ceil(N / 2)) : (N === 4 ? 2 : 3), rows = [];
@@ -58,7 +58,7 @@
         <div class="count${xmasDay ? ' merry' : ''}">${xmasDay
           ? '<span class="count-num">Merry Christmas</span><span class="count-unit">Go open something.</span>'
           : '<span class="count-num">0</span><span class="count-unit">days until Christmas</span><span class="count-sub"><span><b>00</b> hr</span><span><b>00</b> min</span><span><b>00</b> sec</span></span>'}${A.tracker ? A.tracker.chipHTML() : ''}${A.reveal ? A.reveal.chipHTML() : ''}</div>
-        <div class="tree-area">${rows.map((r, ri) => `<div class="g-row">${garland(ri, w, gh)}<div class="orns" style="margin-top:${(-gh * .5).toFixed(0)}px">${r.map((n, i) => orn(n, lens[ri * per + i] * h, ri * per + i, size)).join('')}</div></div>`).join('')}</div>${A.share ? A.share.button() : ''}`;
+        ${A.prizes ? A.prizes.strip() : ''}<div class="tree-area">${rows.map((r, ri) => `<div class="g-row">${garland(ri, w, gh)}<div class="orns" style="margin-top:${(-gh * .5).toFixed(0)}px">${r.map((n, i) => orn(n, lens[ri * per + i] * h, ri * per + i, size)).join('')}</div></div>`).join('')}</div>${A.share ? A.share.button() : ''}`;
       tick(true); clearInterval(timer); timer = setInterval(tick, 1000);
       $$('.orn', root).forEach(b => b.onclick = () => A.go('#/list/' + encodeURIComponent(b.dataset.name)));
       if (A.reveal) A.reveal.wire(root);
