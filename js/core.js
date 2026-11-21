@@ -83,7 +83,7 @@ window.App = (function () {
       if (l && Object.keys(l).length) { obj = {}; Object.keys(l).forEach((n, i) => { obj[n] = { c: i % PALETTE.length, at: i + 1 }; }); App.store.set('people', obj); }
     }
     obj = obj || {};
-    const arr = Object.keys(obj).filter(n => obj[n] && App.safeName(n)).map(n => ({ name: n, c: PALETTE[(obj[n].c | 0) % PALETTE.length], at: +obj[n].at || 0 }))
+    const arr = Object.keys(obj).filter(n => obj[n] && App.safeName(n)).map(n => ({ name: n, c: PALETTE[(obj[n].c | 0) % PALETTE.length], at: +obj[n].at || 0, np: !!obj[n].np }))
       .sort((a, b) => a.at - b.at || (a.name < b.name ? -1 : 1));
     App.people.length = 0; App.names.length = 0;
     arr.forEach(p => { App.people.push(p); App.names.push(p.name); });
@@ -91,13 +91,17 @@ window.App = (function () {
   /* a name that came down from the group is shown only if it could not be mistaken for code */
   App.safeName = n => typeof n === 'string' && n.length > 0 && n.length <= 40 && !/[<>"'&`\\\x00-\x1f]/.test(n);
   App.cleanName = s => String(s || '').replace(/[^\p{L}\p{N} \-]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 14).trim();
-  App.addPerson = name => {
+  /* np = "no phone": this person has no device of their own, so the others add wishes for them */
+  App.noPhone = n => !!App.person(n).np;
+  App.setNoPhone = (n, on) => { const obj = App.store.get('people', {}) || {}; if (!obj[n]) return; if (on) obj[n].np = 1; else delete obj[n].np; App.store.set('people', obj); App.loadPeople(); App.emit('people'); };
+  App.addPerson = (name, opts) => {
     name = App.cleanName(name); if (!name || name in {}) return '';
     const obj = App.store.get('people', {}) || {}, hit = Object.keys(obj).find(n => obj[n] && n.toLowerCase() === name.toLowerCase());
     if (hit) return hit;
     if (App.names.length >= PALETTE.length) return '';
     const used = Object.keys(obj).map(n => obj[n] && obj[n].c); let c = 0; while (used.indexOf(c) >= 0 && c < PALETTE.length - 1) c++;
-    obj[name] = { c, at: Date.now() }; App.store.set('people', obj); App.loadPeople(); App.emit('people'); return name;
+    obj[name] = { c, at: Date.now() }; if (opts && opts.np) obj[name].np = 1;
+    App.store.set('people', obj); App.loadPeople(); App.emit('people'); return name;
   };
   App.removePerson = name => { const obj = App.store.get('people', {}) || {}; if (!obj[name]) return; delete obj[name]; App.store.set('people', obj); App.loadPeople(); if (ME === name) ME = null; App.emit('people'); };
   App.loadPeople();

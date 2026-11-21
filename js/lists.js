@@ -110,10 +110,12 @@
   `);
 
   /* ---------- the list screen ---------- */
+  /* a "no phone" person's list can be added to by anyone, until that person picks their name on a device of their own */
+  const helps = who => who !== A.me() && A.noPhone && A.noPhone(who) && !(A.lock && A.lock.has(who));
   function cardHTML(who, it, mine) {
     const p = A.person(who), src = firstPhoto(it), n = (it.photos || []).length, mp = mine ? '' : myPlan(it.id), others = mine ? [] : sharedPlans(it.id, who);
     const act = mine ? '<button class="btn sm" data-edit="' + it.id + '">' + A.icon('pencil', 16) + 'Edit</button><button class="btn sm' + (it.got ? ' green' : '') + '" data-got="' + it.id + '">' + A.icon('check', 16) + (it.got ? 'Got it' : 'I got this') + '</button>'
-      : '<button class="btn sm' + (mp ? ' primary' : '') + '" data-plan="' + it.id + '">' + A.icon(mp ? 'check' : 'lock', 16) + (mp ? PLAN[mp] : 'Add to my picks') + '</button>';
+      : (helps(who) ? '<button class="btn sm" data-edit="' + it.id + '">' + A.icon('pencil', 16) + 'Edit</button>' : '') + '<button class="btn sm' + (mp ? ' primary' : '') + '" data-plan="' + it.id + '">' + A.icon(mp ? 'check' : 'lock', 16) + (mp ? PLAN[mp] : (helps(who) ? 'My pick' : 'Add to my picks')) + '</button>';
     return '<article class="wcard' + (it.top ? ' is-top' : '') + (it.got ? ' is-got' : '') + '" data-id="' + it.id + '" style="--c2:' + p.c[1] + ';--c3:' + p.c[2] + '">' +
       '<div class="wpic">' + (src ? photoBox(src) : A.icon(it.icon || 'gift', 64, 'ph')) +
       '<div class="wbadges">' + (it.got ? '<span class="chip green">' + A.icon('check') + (mine ? 'You got it' : esc(who) + ' got this') + '</span>' : badges(it)) + '</div>' + (n > 1 ? '<span class="wcount">' + A.icon('photo', 14) + n + '</span>' : '') + '</div>' +
@@ -135,6 +137,7 @@
         $('#unhide', root).onclick = () => { A.safety.hidePerson(who, false); A.refresh(); };
         return;
       }
+      const help = !mine && helps(who);
       const items = sorted(who), picked = mine ? 0 : items.filter(i => myPlan(i.id)).length;
       const sub = items.length ? items.length + (items.length === 1 ? ' wish' : ' wishes') + (picked ? ', ' + picked + ' in your picks' : '') + (who === A.me() ? '. Everyone can see your list.' : '') : 'Nothing here yet';
       root.innerHTML = '<div class="phead"><a class="icon-btn solid" href="#/" aria-label="Back">' + A.icon('back') + '</a>' + A.ui.avatar(who, 40) +
@@ -142,9 +145,10 @@
         '<button class="icon-btn solid" id="pastBtn" aria-label="Past gifts">' + A.icon('clock', 20) + '</button>' +
         (mine ? '<button class="btn primary sm" data-add>' + A.icon('plus', 18) + 'Add</button>' : '<button class="btn sm" id="picksBtn">' + A.icon('lock', 16) + 'My picks</button>') + '</div>' +
         (A.about ? A.about.stripHTML(who) : '') +
+        (help && items.length ? '<button class="np-strip" data-add>' + A.icon('plus', 18) + '<span><b>Add a wish for ' + esc(who) + '</b><small>No phone, so anyone in the group can add for ' + esc(who) + '.</small></span></button>' : '') +
         (items.length
-          ? '<div class="reel" id="reel">' + items.map(it => cardHTML(who, it, mine)).join('') + (mine ? '<button class="wcard addcard" data-add>' + A.icon('plus', 30) + '<span>Add a wish</span></button>' : '') + '</div><div class="dots" id="dots"></div>'
-          : '<div class="empty">' + A.icon('gift', 54) + '<p>' + (mine ? 'Add the first thing you are hoping for. A photo and a link make it easy to shop for you.' : esc(who) + ' has not added anything yet.') + '</p>' + (mine ? '<button class="btn primary" data-add>' + A.icon('plus', 18) + 'Add a wish</button>' : '') + '</div>');
+          ? '<div class="reel" id="reel">' + items.map(it => cardHTML(who, it, mine)).join('') + (mine || help ? '<button class="wcard addcard" data-add>' + A.icon('plus', 30) + '<span>' + (mine ? 'Add a wish' : 'Add a wish for ' + esc(who)) + '</span></button>' : '') + '</div><div class="dots" id="dots"></div>'
+          : '<div class="empty">' + A.icon('gift', 54) + '<p>' + (mine ? 'Add the first thing you are hoping for. A photo and a link make it easy to shop for you.' : help ? esc(who) + ' has no phone of their own, so add what ' + esc(who) + ' is hoping for.' : esc(who) + ' has not added anything yet.') + '</p>' + (mine || help ? '<button class="btn primary" data-add>' + A.icon('plus', 18) + (mine ? 'Add a wish' : 'Add a wish for ' + esc(who)) + '</button>' : '') + '</div>');
       $$('[data-add]', root).forEach(b => b.onclick = () => openForm(who, null));
       const pb = $('#picksBtn', root); if (pb) pb.onclick = openPicks;
       $('#pastBtn', root).onclick = () => openPast(who);
@@ -201,7 +205,7 @@
     const mine = who === A.me(), mp = mine ? '' : myPlan(id), pics = (it.photos || []).map(A.photos.src).filter(Boolean), b = it.backup;
     const bsrc = b && b.photo ? A.photos.src(b.photo) : '';
     const act = mine ? '<button class="btn" data-edit>' + A.icon('pencil', 18) + 'Edit</button>'
-      : '<button class="btn' + (mp ? ' primary' : '') + '" data-plan>' + A.icon(mp ? 'check' : 'lock', 18) + (mp ? PLAN[mp] : 'Add to my picks') + '</button>';
+      : (helps(who) ? '<button class="btn" data-edit>' + A.icon('pencil', 18) + 'Edit</button>' : '') + '<button class="btn' + (mp ? ' primary' : '') + '" data-plan>' + A.icon(mp ? 'check' : 'lock', 18) + (mp ? PLAN[mp] : 'Add to my picks') + '</button>';
     return A.ui.sheet({
       title: mine ? 'Your wish' : A.poss(who) + ' wish', wide: true,
       html: '<div class="gal">' + (pics.length ? pics.map(s => '<div>' + photoBox(s) + '</div>').join('') : '<div>' + A.icon(it.icon || 'gift', 90, 'ph') + '</div>') + '</div>' +
@@ -230,7 +234,7 @@
     let photos = (it.photos || []).slice(), links = (it.links && it.links.length ? it.links : ['']).slice(), icon = it.icon || 'gift';
     const b = it.backup || {};
     A.ui.sheet({
-      title: editing ? 'Edit wish' : 'Add a wish', wide: true,
+      title: (editing ? 'Edit wish' : 'Add a wish') + (who !== A.me() ? ' for ' + who : ''), wide: true,
       html: (A.linkFill ? A.linkFill.boxHTML() : '') + '<label class="field"><span>What is it?</span><input class="input" id="fName" maxlength="90" value="' + esc(it.name) + '" placeholder="Wireless headphones"></label>' +
         '<label class="field"><span>About how much?</span><input class="input" id="fPrice" maxlength="40" value="' + esc(it.price) + '" placeholder="$40" inputmode="text"></label>' +
         '<div class="field"><span class="label">Photos</span><div class="drop" id="drop"></div><input type="file" id="fFile" accept="image/*" multiple hidden></div>' +
@@ -246,7 +250,7 @@
           '<label class="field"><span>Link</span><input class="input" id="bLink" value="' + esc(b.link || '') + '" placeholder="https://" inputmode="url" autocapitalize="off"></label>' +
           '<label class="field"><span>Note</span><textarea class="input" id="bNote" maxlength="400" style="min-height:64px">' + esc(b.note || '') + '</textarea></label></details>' +
         '<div class="field"><span class="label">Icon, used when there is no photo</span><div class="iconpick" id="fIcons">' + A.wishIcons.map(n => '<button type="button" data-ic="' + n + '"' + (n === icon ? ' class="on"' : '') + ' aria-label="' + n + '">' + A.icon(n, 22) + '</button>').join('') + '</div></div>' +
-        '<div class="sticky-acts">' + (editing ? '<button class="btn danger" id="fDel" style="flex:0 0 auto" aria-label="Remove this wish">' + A.icon('trash', 18) + '</button>' : '') + '<button class="btn primary" id="fSave">' + (editing ? 'Save' : 'Add to my list') + '</button></div>',
+        '<div class="sticky-acts">' + (editing ? '<button class="btn danger" id="fDel" style="flex:0 0 auto" aria-label="Remove this wish">' + A.icon('trash', 18) + '</button>' : '') + '<button class="btn primary" id="fSave">' + (editing ? 'Save' : who === A.me() ? 'Add to my list' : 'Add to ' + esc(A.poss(who)) + ' list') + '</button></div>',
       onMount(el, close) {
         const drop = $('#drop', el), file = $('#fFile', el), linksEl = $('#fLinks', el);
         /* say plainly whether a backup is set, and keep it true while they type */
@@ -285,7 +289,7 @@
           if (rec.top) arr.forEach(x => { if (x.id !== rec.id) x.top = false; });
           if (rec.santa) arr.forEach(x => { if (x.id !== rec.id) x.santa = false; });
           const i = arr.findIndex(x => x.id === rec.id); if (i >= 0) arr[i] = rec; else arr.push(rec);
-          A.data.save(); close(); A.refresh(); A.ui.toast(editing ? 'Saved.' : 'Added to your list.');
+          A.data.save(); close(); A.refresh(); A.ui.toast(editing ? 'Saved.' : who === A.me() ? 'Added to your list.' : 'Added to ' + A.poss(who) + ' list.');
         };
         const del = $('#fDel', el);
         if (del) del.onclick = () => A.ui.confirm('Take "' + it.name + '" off your list?', 'Take it off', true).then(ok => {

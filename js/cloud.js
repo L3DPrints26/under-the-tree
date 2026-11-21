@@ -397,15 +397,17 @@
       }
     });
   }
-  function addPersonSheet(done) {
+  /* forOther: adding somebody else (from People), so it can ask whether they have a phone of their own */
+  function addPersonSheet(done, forOther) {
     A.ui.sheet({
       title: 'Add a person',
       html: '<label class="field"><span>Their name, the way the family says it</span><input class="input" id="apName" maxlength="14" autocomplete="off" autocapitalize="words" placeholder="Name"></label>' +
+        (forOther ? '<label class="switch" style="margin-top:6px"><span class="s-text"><b>No phone of their own</b><small data-keep>Like a little kid. Anyone in the group can add wishes for them.</small></span><input type="checkbox" id="apNp"></label>' : '') +
         '<p class="gp-msg" id="apMsg"></p><button class="btn primary block" id="apGo">Add</button>',
       onMount(el, close) {
         const inp = $('#apName', el), run = () => {
           if (A.names.length >= A.maxPeople) { $('#apMsg', el).textContent = 'A group can have up to ' + A.maxPeople + ' people.'; return; }
-          const n = A.addPerson(inp.value); if (!n) { $('#apMsg', el).textContent = 'Type a name using letters or numbers.'; return; }
+          const np = $('#apNp', el), n = A.addPerson(inp.value, { np: !!(np && np.checked) }); if (!n) { $('#apMsg', el).textContent = 'Type a name using letters or numbers.'; return; }
           close(); if (done) done(n);
         };
         $('#apGo', el).onclick = run; inp.addEventListener('keydown', e => { if (e.key === 'Enter') run(); });
@@ -423,25 +425,35 @@
     A.ui.sheet({
       title: 'People', cls: 'pp',
       html: '<div class="pp-rail"></div><div class="pp-grid">' + A.names.map(orn).join('') + '</div>' +
-        '<p class="muted pp-note">' + 'Tap someone to pick what you call them. ' + (org ? (boss ? 'You run this group, so you can also unlock a name or take someone off.' : esc(org) + ' runs this group and can unlock a name or take someone off.') : 'A green dot means they have the app open.') + '</p>' +
+        '<p class="muted pp-note">' + 'Tap someone to pick what you call them, or to add wishes for someone with no phone. ' + (org ? (boss ? 'You run this group, so you can also unlock a name or take someone off.' : esc(org) + ' runs this group and can unlock a name or take someone off.') : 'A green dot means they have the app open.') + '</p>' +
         (A.names.length < A.maxPeople ? '<button class="mu-join" id="gpAdd" style="width:100%;margin-top:10px">' + A.icon('plus', 18) + 'Add a person</button>' : '') +
         (org && me === org && A.names.length > 1 ? '<button class="btn sm ghost block" id="gpHand" style="margin-top:8px">Let someone else run this group</button>' : ''),
       onMount(el, close) {
         const again = () => { close(); peopleSheet(); };
-        const add = $('#gpAdd', el); if (add) add.onclick = () => addPersonSheet(again);
+        const add = $('#gpAdd', el); if (add) add.onclick = () => addPersonSheet(again, true);
         $$('[data-p]', el).forEach(b => { b.onclick = () => {
           const who = b.dataset.p; if (who === me) return;
-          /* everyone can pick what they call someone. Whoever runs the group can also unlock or remove them. */
-          if (!boss) { if (A.nick) A.nick.sheet(who); return; }
-          const lockedNow = A.lock && A.lock.has(who);
-          A.ui.sheet({ title: who,
-            html: '<div class="lk-stack" data-keep>' + (A.nick ? '<button class="btn primary block" id="ppNick">' + A.icon('heart', 18) + 'What I call ' + esc(who) + '</button>' : '') + (lockedNow ? '<button class="btn block" id="ppUn">' + A.icon('lock', 18) + 'Unlock this name</button>' : '') + '<button class="btn danger block" id="ppRm">Take ' + esc(who) + ' off the group</button></div>' +
-              '<p class="muted" style="font-size:13px;margin-top:10px">' + (lockedNow ? 'Unlock when the wrong person picked the name. Whoever picks it next gets it. ' : '') + 'Taking someone off keeps their wishes, and they come back if you add the same name again.</p>',
-            onMount(s2, c2) {
-              const nk = $('#ppNick', s2); if (nk) nk.onclick = () => { c2(); A.nick.sheet(who); };
-              const un = $('#ppUn', s2); if (un) un.onclick = () => { A.lock.reset(who); c2(); A.ui.toast('Unlocked.'); again(); };
-              $('#ppRm', s2).onclick = () => { A.removePerson(who); c2(); again(); A.softRefresh(); };
-            } });
+          /* everyone: what you call them, and "no phone" for a name nobody has picked on a device.
+             Whoever runs the group can also unlock or remove them. */
+          const person = () => {
+            const lockedNow = A.lock && A.lock.has(who), np = A.noPhone(who);
+            A.ui.sheet({ title: who,
+              html: '<div class="lk-stack" data-keep>' +
+                (np && !lockedNow ? '<button class="btn primary block" id="ppList">' + A.icon('plus', 18) + 'Add wishes for ' + esc(who) + '</button>' : '') +
+                (A.nick ? '<button class="btn' + (np && !lockedNow ? '' : ' primary') + ' block" id="ppNick">' + A.icon('tag', 18) + 'What I call ' + esc(who) + '</button>' : '') +
+                (!lockedNow ? '<label class="switch"><span class="s-text"><b>No phone of their own</b><small>Anyone in the group can add wishes for ' + esc(who) + '.</small></span><input type="checkbox" id="ppNp"' + (np ? ' checked' : '') + '></label>' : '') +
+                (boss && lockedNow ? '<button class="btn block" id="ppUn">' + A.icon('lock', 18) + 'Unlock this name</button>' : '') +
+                (boss ? '<button class="btn danger block" id="ppRm">Take ' + esc(who) + ' off the group</button>' : '') + '</div>' +
+                (boss ? '<p class="muted" style="font-size:13px;margin-top:10px">' + (lockedNow ? 'Unlock when the wrong person picked the name. Whoever picks it next gets it. ' : '') + 'Taking someone off keeps their wishes, and they come back if you add the same name again.</p>' : ''),
+              onMount(s2, c2) {
+                const nk = $('#ppNick', s2); if (nk) nk.onclick = () => { c2(); A.nick.sheet(who); };
+                const sw = $('#ppNp', s2); if (sw) sw.onchange = () => { A.setNoPhone(who, sw.checked); A.ui.toast(sw.checked ? 'Anyone in the group can add wishes for ' + who + ' now.' : 'Turned off.'); c2(); person(); A.softRefresh(); };
+                const ls = $('#ppList', s2); if (ls) ls.onclick = () => { c2(); close(); A.go('#/list/' + encodeURIComponent(who)); };
+                const un = $('#ppUn', s2); if (un) un.onclick = () => { A.lock.reset(who); c2(); A.ui.toast('Unlocked.'); again(); };
+                const rm = $('#ppRm', s2); if (rm) rm.onclick = () => { A.removePerson(who); c2(); again(); A.softRefresh(); };
+              } });
+          };
+          person();
         }; });
         const ho = $('#gpHand', el); if (ho) ho.onclick = () => A.ui.sheet({ title: 'Who should run this group?', html: '<p class="muted">They will be the one who can unlock names and take people off.</p><div class="gp-kinds" style="margin-top:12px">' + A.names.filter(x => x !== me).map(x => '<button class="btn" data-ho="' + esc(x) + '">' + A.ui.avatar(x, 26) + esc(x) + '</button>').join('') + '</div>',
           onMount(s2, c2) { $$('[data-ho]', s2).forEach(x => { x.onclick = () => { A.lock.handOver(x.dataset.ho); c2(); close(); A.ui.toast(x.dataset.ho + ' runs this group now.'); }; }); } });

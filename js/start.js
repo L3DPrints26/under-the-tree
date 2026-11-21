@@ -99,6 +99,8 @@
     .iv-big{text-align:center;padding:6px 0 4px}
     .iv-big small{display:block;font-size:14px;font-weight:600;color:var(--gold)}
     .iv-big b{display:block;font-family:var(--display);font-weight:600;font-size:clamp(54px,19vw,92px);letter-spacing:.1em;line-height:1.08;color:#fff;margin:6px 0 10px}
+    .np-strip{flex:none;display:flex;align-items:center;gap:10px;width:100%;min-height:48px;padding:7px 12px;margin:0 0 10px;border-radius:14px;text-align:left;background:linear-gradient(90deg,rgba(47,154,100,.4),rgba(47,154,100,.16));border:1px solid rgba(95,227,161,.5)}
+    .np-strip svg{flex:none;color:#5fe3a1}.np-strip span{flex:1;min-width:0}.np-strip b{display:block;font-size:14.5px;font-weight:700;color:#fff}.np-strip small{display:block;font-size:12.5px;color:#cfe0d6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .mu-about{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:8px 14px;border-radius:16px;background:linear-gradient(90deg,rgba(47,154,100,.32),rgba(47,154,100,.1));border:1px solid rgba(95,227,161,.45);text-align:left;margin-bottom:12px}
     .mu-about svg{flex:none;color:#5fe3a1}.mu-about span{flex:1;min-width:0}.mu-about b{display:block;font-weight:700}.mu-about small{display:block;font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .mu-about em{font-style:normal;flex:none;font-size:11.5px;font-weight:700;color:var(--gold-ink);background:var(--gold);border-radius:999px;padding:2px 8px}
