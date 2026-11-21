@@ -19,7 +19,9 @@
   function paintBg(key) {
     const p = PHOTOS.find(x => x[0] === key) || PHOTOS[0], ph = $('#bgPhoto'), tok = ++bgTok;
     const px = Math.min(2400, Math.ceil(Math.max(innerWidth, innerHeight) * Math.min(2, devicePixelRatio || 1) / 400) * 400);
-    const url = photoUrl(p[2], 'w=' + px + '&q=72'), img = new Image();
+    /* the picture is saved inside the app; the same photo is fetched from the internet only if that copy is missing */
+    const local = 'assets/bg/' + p[0] + '.jpg'; let url = local; const img = new Image();
+    img.onerror = () => { if (url === local) { url = photoUrl(p[2], 'w=' + px + '&q=72'); img.src = url; } };
     ph.classList.remove('on');
     img.onload = () => { if (tok !== bgTok) return; setTimeout(() => { if (tok !== bgTok) return; ph.style.backgroundImage = 'url("' + url + '")'; ph.style.backgroundPosition = p[3]; ph.classList.add('on'); }, ph.style.backgroundImage ? 350 : 0); };
     img.src = url;

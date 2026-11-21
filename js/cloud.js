@@ -85,8 +85,10 @@
   const within = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('offline')), ms))]);
   function start() {
     if (starting) return starting;
-    starting = loadScript(SDK + 'app-compat.js')
-      .then(() => Promise.all([loadScript(SDK + 'auth-compat.js'), loadScript(SDK + 'database-compat.js')]))
+    /* the Firebase code is saved with the app; Google's copy is only the backup */
+    const lib = n => loadScript('assets/firebase/firebase-' + n + '-compat.js').catch(() => loadScript(SDK + n + '-compat.js'));
+    starting = lib('app')
+      .then(() => Promise.all([lib('auth'), lib('database')]))
       .then(() => {
         fb = window.firebase; if (!fb.apps.length) fb.initializeApp(CFG); db = fb.database();
         return new Promise((res, rej) => {

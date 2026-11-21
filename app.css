@@ -179,7 +179,7 @@ textarea.input{min-height:96px;resize:none;line-height:1.45}
 .sheet.wide{max-width:760px}
 .sheet-back.in .sheet{transform:none}
 .sheet-back.out .sheet{transform:translateY(102%)}
-.sheet-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 10px 6px 20px;flex:none}
+.sheet-head{touch-action:none;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 10px 6px 20px;flex:none}
 .sheet-head h2{font-family:var(--display);font-weight:600;font-size:21px;line-height:1.15;color:#fff}
 .sheet-body{padding:6px 20px 20px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;min-height:0}
 .sheet.confirm .sheet-head{padding-bottom:14px}

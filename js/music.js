@@ -15,7 +15,12 @@
      the next song ahead of time, so skipping does not start from zero. */
   const audio = new Audio(); audio.preload = 'auto';
   const ahead = new Audio(); ahead.preload = 'auto'; ahead.muted = true;
-  const url = i => BASE + encodeURIComponent(TRACKS[(i + TRACKS.length) % TRACKS.length][1]) + '.mp3';
+  /* The songs are saved inside the app, so they play with no internet. If one is missing, the same song is
+     fetched from incompetech.com instead. */
+  const LOCAL = { 'Jingle Bells': 'jingle-bells', 'Deck the Halls A': 'deck-the-halls-a', 'Silent Night': 'silent-night', 'Oh Holy Night': 'oh-holy-night', 'Angels We Have Heard': 'angels-we-have-heard', 'Up on a Housetop': 'up-on-a-housetop', 'Dance of the Sugar Plum Fairy': 'sugar-plum-fairy', 'It Came Upon a Midnight Clear': 'midnight-clear', 'Jingle Bells Calm': 'jingle-bells-calm', 'Deck the Halls B': 'deck-the-halls-b', 'Frost Waltz': 'frost-waltz', 'Winter Chimes': 'winter-chimes', 'Greensleeves': 'greensleeves', 'Adeste Fideles Shorter': 'adeste-fideles' };
+  const remote = i => BASE + encodeURIComponent(TRACKS[(i + TRACKS.length) % TRACKS.length][1]) + '.mp3';
+  const url = i => { const f = TRACKS[(i + TRACKS.length) % TRACKS.length][1]; return LOCAL[f] ? 'assets/music/' + LOCAL[f] + '.mp3' : remote(i); };
+  let usingRemote = -1;
   let loading = false;
   const prefs = Object.assign({ on: true, vol: 0.6, repeat: false, skip: {} }, A.store.get('music', {}));
   if (!prefs.skip || typeof prefs.skip !== 'object') prefs.skip = {};
@@ -46,6 +51,8 @@
   audio.addEventListener('ended', () => { if (!prefs.repeat) next(1); });
   audio.addEventListener('error', () => {
     if (!audio.src || !started) return;
+    /* the saved copy would not play: try the same song from the internet once */
+    if (audio.src.indexOf('/assets/music/') >= 0 && usingRemote !== ti) { usingRemote = ti; audio.src = remote(ti); try { audio.load(); audio.play(); } catch (e) {} return; }
     if (++errs >= TRACKS.length) { started = false; paint(); A.ui.toast('Music needs an internet connection.'); return; }
     next(1);
   });

@@ -448,6 +448,14 @@ window.App = (function () {
     const api = { el: back.firstChild, back, close, locked: !!opts.locked, title: opts.title || '', at: Date.now() };
     back.addEventListener('click', e => { if ((e.target === back && !opts.locked) || e.target.closest('[data-close]')) close(); });
     stack.push(api);
+    /* Swipe down on the top of a pop-up to close it, like any phone app. A short drag springs back. */
+    if (!opts.locked) {
+      const el = back.firstChild, head = el.querySelector('.sheet-head'); let y0 = null, dy = 0, id = null;
+      head.addEventListener('pointerdown', e => { if (e.pointerType === 'mouse' || e.target.closest('[data-close]')) return; y0 = e.clientY; dy = 0; id = e.pointerId; try { head.setPointerCapture(id); } catch (x) {} el.style.transition = 'none'; });
+      head.addEventListener('pointermove', e => { if (y0 == null || e.pointerId !== id) return; dy = Math.max(0, e.clientY - y0); el.style.transform = 'translateY(' + dy + 'px)'; });
+      const end = () => { if (y0 == null) return; const far = dy > 90; y0 = null; el.style.transition = ''; el.style.transform = ''; if (far) close(); };
+      head.addEventListener('pointerup', end); head.addEventListener('pointercancel', end);
+    }
     requestAnimationFrame(() => back.classList.add('in'));
     setTimeout(() => back.classList.add('in'), 30);
     if (opts.onMount) opts.onMount(api.el, close);
