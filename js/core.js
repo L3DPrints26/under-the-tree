@@ -32,7 +32,7 @@ window.App = (function () {
   /* ---------- time (supports ?date=YYYY-MM-DD for testing) ---------- */
   const T0 = Date.now(), DBG = /^https?:$/.test(location.protocol) && /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? App.qs.get('date') : null;      /* test switch, this computer only */
   App.now = () => {
-    if (DBG) { const d = new Date(DBG + 'T09:00:00'); if (!isNaN(d)) return new Date(d.getTime() + (Date.now() - T0)); }
+    if (DBG) { const d = new Date(DBG.indexOf('T') > 0 ? DBG + ':00' : DBG + 'T09:00:00'); if (!isNaN(d)) return new Date(d.getTime() + (Date.now() - T0)); }
     return new Date();
   };
   App.xmas = () => { const n = App.now(), y = n.getFullYear(); return n >= new Date(y, 11, 26) ? new Date(y + 1, 11, 25) : new Date(y, 11, 25); };
@@ -573,6 +573,7 @@ window.App = (function () {
         '<div class="mu-b">' +
         /* the front page: what the app is and what changed */
         '<button class="mu-about" id="mnAbout">' + App.icon('tree', 20) + '<span><b>About and what is new</b><small>' + (App.start && App.start.news[0] ? App.esc(App.start.news[0].title) : 'What the app does') + '</small></span>' + (App.start && App.start.unseen() ? '<em>New</em>' : '') + '</button>' +
+        (App.tips && App.tips.available() ? '<button class="mu-about mu-tip" id="mnTip">' + App.icon('heart', 20) + '<span><b>Tip the dev</b><small>Optional. It unlocks nothing.</small></span></button>' : '') +
         /* starting or joining: pill buttons and one dashed bar */
         (C ? '<p class="mu-h">Start something new</p><div class="mu-pills"><button class="mu-pill green" id="mnFamily">' + App.icon('tree', 18) + 'Family</button><button class="mu-pill red" id="mnFriends">' + App.icon('heart', 18) + 'Friends</button><button class="mu-pill line" id="mnMore">More</button></div>' +
           '<button class="mu-join" id="mnJoin">' + App.icon('plus', 18) + 'Join a group with a code</button>' : '') +
@@ -589,6 +590,7 @@ window.App = (function () {
         tap('mnInvite', () => C.invite()); tap('mnPeople', () => { close(); C.peopleSheet(); }); tap('mnGroups', () => { close(); C.groupSheet(); });
         tap('mnFamily', () => { close(); App.go('#/start/family'); }); tap('mnFriends', () => { close(); App.go('#/start/friends'); }); tap('mnJoin', () => { close(); App.go('#/start/join'); }); tap('mnMore', () => { close(); App.go('#/start/new'); });
         tap('mnAbout', () => { close(); App.go('#/start'); });
+        tap('mnTip', () => { close(); App.tips.sheet(); });
         tap('mnBg', () => { close(); ui.settings(); }); tap('mnPin', () => { close(); App.lock.optionsSheet(); }); tap('mnPriv', () => { close(); App.privacy.sheet(); }); tap('mnSafe', () => { close(); App.safety.sheet(); });
         tap('mnNames', () => { close(); C.peopleSheet(); ui.toast('Tap someone to pick what you call them.'); });
       }

@@ -42,12 +42,14 @@
   A.pages.home = {
     render(root) {
       const land = matchMedia('(orientation:landscape) and (min-width:560px)').matches;
-      const w = root.clientWidth - (land ? 36 : 28), h = root.clientHeight, now = A.now(), xmasDay = now.getMonth() === 11 && now.getDate() === 25;
+      /* room taken by the support button and, on Christmas Eve, the Santa banner: the ornaments shrink to fit what is left */
+      const extra = (A.share ? 64 : 0) + (A.tracker && A.tracker.live() ? 100 : 0);
+      const w = root.clientWidth - (land ? 36 : 28), h = root.clientHeight - extra, now = A.now(), xmasDay = now.getMonth() === 11 && now.getDate() === 25;
       /* any number of people: one row of up to 7 on a wide screen, rows of 3 on a tall one */
       const N = A.names.length, per = land ? (N <= 7 ? Math.max(N, 1) : Math.ceil(N / 2)) : (N === 4 ? 2 : 3), rows = [];
       for (let i = 0; i < N; i += per) rows.push(A.names.slice(i, i + per));
       const R = Math.max(rows.length, 1), cols = Math.max(Math.min(per, N), land ? 4 : 3);
-      const size = land ? `min(${(74.4 / cols).toFixed(1)}cqw,${(36 / R).toFixed(1)}cqh,170px)` : `min(${(72 / cols).toFixed(1)}cqw,${(34 / R).toFixed(1)}cqh)`;
+      const size = land ? `min(${(74.4 / cols).toFixed(1)}cqw,calc((100cqh - ${extra}px) * ${(.36 / R).toFixed(4)}),170px)` : `min(${(72 / cols).toFixed(1)}cqw,calc((100cqh - ${extra}px) * ${(.34 / R).toFixed(4)}))`;
       const gh = (land ? Math.min(w * .085, h * .16) : Math.min(w * .11, h * .07)) * Math.min(1, 2 / R + (land ? .5 : 0));
       const pat = land ? [.05, .105, .03, .12, .06, .09, .04] : [.02, .045, .012, .04, .016, .034];
       const lens = A.names.map((n, i) => pat[i % pat.length] * Math.min(1, (land ? 1 : 2) / R));
@@ -56,11 +58,12 @@
         <div class="count${xmasDay ? ' merry' : ''}">${xmasDay
           ? '<span class="count-num">Merry Christmas</span><span class="count-unit">Go open something.</span>'
           : '<span class="count-num">0</span><span class="count-unit">days until Christmas</span><span class="count-sub"><span><b>00</b> hr</span><span><b>00</b> min</span><span><b>00</b> sec</span></span>'}${A.tracker ? A.tracker.chipHTML() : ''}${A.reveal ? A.reveal.chipHTML() : ''}</div>
-        <div class="tree-area">${rows.map((r, ri) => `<div class="g-row">${garland(ri, w, gh)}<div class="orns" style="margin-top:${(-gh * .5).toFixed(0)}px">${r.map((n, i) => orn(n, lens[ri * per + i] * h, ri * per + i, size)).join('')}</div></div>`).join('')}</div>`;
+        <div class="tree-area">${rows.map((r, ri) => `<div class="g-row">${garland(ri, w, gh)}<div class="orns" style="margin-top:${(-gh * .5).toFixed(0)}px">${r.map((n, i) => orn(n, lens[ri * per + i] * h, ri * per + i, size)).join('')}</div></div>`).join('')}</div>${A.share ? A.share.button() : ''}`;
       tick(true); clearInterval(timer); timer = setInterval(tick, 1000);
       $$('.orn', root).forEach(b => b.onclick = () => A.go('#/list/' + encodeURIComponent(b.dataset.name)));
       if (A.reveal) A.reveal.wire(root);
       if (A.tracker) A.tracker.wire(root);
+      const sup = $('#hmSup', root); if (sup) sup.onclick = () => A.share.support();
       $('#fxSanta', root).onclick = () => { if (A.scene) A.scene.callSanta(); };
       $('#fxSnow', root).onclick = () => { if (A.scene) A.scene.blizzard(); A.ui.toast('Blizzard for ten seconds.'); };
     },

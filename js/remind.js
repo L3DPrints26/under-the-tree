@@ -16,7 +16,10 @@
     if (now > new Date(y, 11, 25, 9)) y++;
     const out = [];
     for (let d = 1; d <= 25; d++) out.push({ id: 100 + d, at: new Date(y, 11, d, 8, 0), body: d === 25 ? 'Merry Christmas. Door 25 is ready, and the group can vote on who gave what.' : 'Door ' + d + ' is ready to open.' });
+    out.push({ id: 201, at: new Date(y, 11, 24, 8, 0), body: 'It is Christmas Eve. Santa is on his way. Track him in the app all day.' });
     out.push({ id: 200, at: new Date(y, 11, 24, 17, 0), body: 'Santa is on his way. The tracker is on.' });
+    out.push({ id: 202, at: new Date(y, 11, 24, 21, 30), body: 'Santa is almost at your neighborhood. Time to get ready for bed.' });
+    out.push({ id: 203, at: new Date(y, 11, 24, 22, 45), body: 'Santa is near your house! Lights out, right now.' });
     return out.filter(x => x.at > now);
   }
 

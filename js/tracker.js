@@ -2,7 +2,9 @@
    The idea is simple and the math is real: Santa shows up at about 11 at night, when everyone should
    be asleep. So right now he is wherever in the world it is 11 pm on December 24. He starts at the
    first place that reaches 11 pm (Kiritimati, in the Pacific) and follows the night west for 26 hours.
-   Nothing here is saved or sent anywhere. */
+   Nothing here is sent anywhere. The device only remembers which pop-ups it already showed.
+   On Christmas Eve it is hard to miss: a big banner on the home page, a pop-up the first time the app is opened that day,
+   and another when he gets close. What it says about "your neighborhood" is a game, worked out from your clock. */
 (function () {
   'use strict';
   const A = window.App, $ = A.$, esc = A.esc;
@@ -28,11 +30,21 @@
     .tk-ends{position:absolute;left:6%;right:6%;bottom:14px;display:flex;justify-content:space-between;font-size:11.5px;font-weight:700;color:var(--muted)}
     .tk-where{margin-top:14px;text-align:center}
     .tk-where small{display:block;font-size:13px;font-weight:700;color:var(--gold)}
-    .tk-where b{display:block;font-family:var(--display);font-weight:600;font-size:clamp(24px,7vw,32px);line-height:1.15;color:#fff}
+    .tk-where b{display:block;font-family:var(--display);font-weight:600;font-size:clamp(19px,5.5vw,24px);line-height:1.15;color:#fff}
     .tk-where span{display:block;margin-top:2px;font-size:14px;color:var(--muted)}
-    .tk-home{display:flex;align-items:center;gap:12px;margin-top:14px;padding:12px 14px;border-radius:16px;background:rgba(201,36,58,.22);border:1px solid rgba(255,122,138,.5)}
-    .tk-home svg{flex:none;color:var(--gold)}
-    .tk-home b{display:block;font-weight:700}.tk-home small{display:block;color:#f3d9dd;font-size:13px}
+    .tk-hero{margin-bottom:14px;padding:18px 14px 16px;border-radius:20px;text-align:center;color:#fff;background:linear-gradient(180deg,#e8404f,#a3162a);border:1.5px solid rgba(255,214,140,.7);box-shadow:0 8px 22px rgba(0,0,0,.35)}
+    .tk-hero svg{color:var(--gold);margin-bottom:4px}
+    .tk-hero b{display:block;font-family:var(--display);font-weight:600;font-size:clamp(26px,8vw,36px);line-height:1.1}
+    .tk-hero small{display:block;margin-top:6px;font-size:15px;color:#ffe9ec}
+    .tk-hero.hot{animation:tk-hot 1.2s ease-in-out infinite}
+    @keyframes tk-hot{0%,100%{box-shadow:0 8px 22px rgba(0,0,0,.35),0 0 0 0 rgba(255,214,140,.55)}50%{box-shadow:0 8px 22px rgba(0,0,0,.35),0 0 0 14px rgba(255,214,140,0)}}
+    .tk-banner{position:relative;display:flex;align-items:center;gap:12px;width:100%;max-width:440px;min-height:68px;margin:12px auto 0;padding:10px 16px 10px 14px;border-radius:20px;text-align:left;color:#fff;background:linear-gradient(180deg,#ee4a5a,#a3162a);border:2px solid rgba(255,214,140,.85);box-shadow:0 8px 22px rgba(0,0,0,.45);animation:tk-hot 1.8s ease-in-out infinite}
+    .tk-banner.hot{animation-duration:.9s}
+    .tk-banner svg{flex:none;color:var(--gold)}
+    .tk-banner span{flex:1;min-width:0}
+    .tk-banner b{display:block;font-family:var(--display);font-weight:600;font-size:clamp(18px,5.4vw,22px);line-height:1.1}
+    .tk-banner small{display:block;margin-top:2px;font-size:13.5px;font-weight:600;color:#ffe9ec;line-height:1.25}
+    .tk-banner i{flex:none;font-style:normal;font-weight:800;font-size:13.5px;color:var(--gold-ink);background:var(--gold);border-radius:999px;padding:7px 13px}
   `);
 
   /* the moment (as a real Date) Santa reaches a stop this season */
@@ -44,8 +56,17 @@
   function state() {
     const now = A.now(), first = arrival(STOPS[0][1]), last = arrival(STOPS[STOPS.length - 1][1]);
     const home = arrival(-now.getTimezoneOffset() / 60), out = { home: home, now: now, total: STOPS.length };
-    out.homeText = now < home ? 'Santa reaches you in ' + span(home - now) : now - home < 36e5 ? 'Santa is in your part of the world right now' : 'Santa has already been to your part of the world';
-    out.homeSub = now < home ? 'That is 11 at night where you are. Be asleep by then.' : now - home < 36e5 ? 'Lights out. He does not stop for kids who are awake.' : 'Go look under the tree in the morning.';
+    /* how close he is to you, in words: worked out from the time until he reaches 11 pm where you are */
+    const hrs = (home - now) / 36e5;
+    let lvl = 7, big = 'Santa has been to your house!', small = 'Go look under the tree in the morning.';
+    if (now < first) { lvl = 0; big = 'Santa is at the North Pole'; small = 'Loading the sleigh. He leaves soon.'; }
+    else if (hrs > 6) { lvl = 1; big = 'Santa is on his way'; small = 'He is still a long way from your neighborhood.'; }
+    else if (hrs > 3) { lvl = 2; big = 'Santa is getting closer to your neighborhood'; small = 'Keep an eye on the clock.'; }
+    else if (hrs > 1) { lvl = 3; big = 'Santa is almost at your neighborhood'; small = 'Time to get ready for bed.'; }
+    else if (hrs > .25) { lvl = 4; big = 'Santa is very close to your neighborhood!'; small = 'Just a few streets away. Get in bed!'; }
+    else if (hrs > 0) { lvl = 5; big = 'Santa is near your house!'; small = 'Lights out, right now!'; }
+    else if (hrs > -1) { lvl = 6; big = 'Santa is at your house right now'; small = 'Shh. Stay in bed.'; }
+    out.lvl = lvl; out.homeText = big; out.homeSub = small;
     if (now < first) return Object.assign(out, { phase: 'before', title: 'At the North Pole', sub: 'Loading the sleigh. He leaves in ' + span(first - now) + '.', done: 0, at: 0 });
     if (now >= new Date(last.getTime() + 36e5)) return Object.assign(out, { phase: 'after', title: 'Back at the North Pole', sub: 'Every stop is done. See you next year.', done: STOPS.length, at: 1 });
     let i = 0; while (i + 1 < STOPS.length && now >= arrival(STOPS[i + 1][1])) i++;
@@ -62,8 +83,27 @@
     return n >= new Date(y, 11, 24) && n < new Date(y, 11, 25, 12);
   }
 
-  function chipHTML() { return live() ? '<button class="tk-chip" id="tkChip">' + A.icon('sleigh', 18) + 'Track Santa</button>' : ''; }
+  /* the big banner on the home page, all of Christmas Eve */
+  function chipHTML() {
+    if (!live()) return '';
+    const s = state();
+    return '<button class="tk-banner' + (s.lvl >= 4 && s.lvl < 7 ? ' hot' : '') + '" id="tkChip">' + A.icon('sleigh', 34) + '<span><b>' + (s.lvl >= 7 ? 'Santa has been!' : 'Track Santa live') + '</b><small>' + esc(s.homeText) + '</small></span><i>' + (s.lvl >= 7 ? 'Look' : 'Track') + '</i></button>';
+  }
   function wire(root) { const b = $('#tkChip', root); if (b) b.onclick = sheet; }
+
+  /* keep the banner's words current while the app is open, and pop the tracker up the first time today and when he gets close */
+  const seen = () => A.store.raw.get('tkSeen', {}) || {};
+  function nudge() {
+    if (!live() || !A.me || !A.me()) return;
+    const s = state(), b = document.querySelector('#tkChip');
+    if (b) { const sm = b.querySelector('small'); if (sm && sm.textContent !== s.homeText) sm.textContent = s.homeText; b.classList.toggle('hot', s.lvl >= 4 && s.lvl < 7); }
+    const y = String(eveYear()), k = seen(), mark = s.lvl >= 5 ? 5 : s.lvl >= 4 ? 4 : 1;
+    if (k.y === y && (k.lvl || 0) >= mark) return;
+    if (A.ui.sheetOpen() || (A.tour && A.tour.running && A.tour.running())) return;
+    A.store.raw.set('tkSeen', { y: y, lvl: mark });
+    sheet();
+  }
+  setInterval(nudge, 20000); setTimeout(nudge, 6000);
 
   function sheet() {
     let timer = 0, stars = '';
@@ -71,9 +111,9 @@
     const art = ($('#santa') || {}).innerHTML || '';
     A.ui.sheet({
       title: 'Santa tracker',
-      html: '<div class="tk-sky">' + stars + '<div class="tk-earth"></div><div class="tk-track"></div><div class="tk-sled" id="tkSled">' + art + '</div><div class="tk-ends"><span>Pacific</span><span>Hawaii</span></div></div>' +
+      html: '<div class="tk-hero" id="tkHero">' + A.icon('home', 28) + '<b id="tkHome"></b><small id="tkHomeSub"></small></div>' +
+        '<div class="tk-sky">' + stars + '<div class="tk-earth"></div><div class="tk-track"></div><div class="tk-sled" id="tkSled">' + art + '</div><div class="tk-ends"><span>Pacific</span><span>Hawaii</span></div></div>' +
         '<div class="tk-where"><small id="tkCount"></small><b id="tkTitle"></b><span id="tkSub"></span></div>' +
-        '<div class="tk-home">' + A.icon('home', 24) + '<span><b id="tkHome"></b><small id="tkHomeSub"></small></span></div>' +
         '<p class="sf-foot" data-keep>He shows up at about 11 at night, so the tracker follows 11 pm around the world.</p>',
       onMount(el) {
         const draw = () => {
@@ -84,6 +124,7 @@
           $('#tkSub', el).textContent = s.sub;
           $('#tkHome', el).textContent = s.homeText;
           $('#tkHomeSub', el).textContent = s.homeSub;
+          $('#tkHero', el).classList.toggle('hot', s.lvl >= 4 && s.lvl < 7);
         };
         draw(); timer = setInterval(draw, 15000);
       },

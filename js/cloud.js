@@ -515,7 +515,7 @@
     });
   }
 
-  A.cloud = { status, synced: () => gotFirst, create, join, leave, welcome, createSheet, moreKindsSheet, joinSheet, groupSheet, peopleSheet, addPersonSheet, dropPhoto, invite: () => { const g = groups().find(x => x.id === A.space()); if (g) invite(g.id, g.name); }, groups, pretty, inviteLink };
+  A.cloud = { status, synced: () => gotFirst, create, join, leave, welcome, createSheet, moreKindsSheet, joinSheet, groupSheet, peopleSheet, addPersonSheet, dropPhoto, invite: () => { const g = groups().find(x => x.id === A.space()); if (g) invite(g.id, g.name); }, groups, pretty, inviteLink, shareIcons: SHARE_ICONS };
 
   /* opened from an invite link */
   A.cloud.pendingJoin = (() => { const m = /^#\/join\/([A-Za-z0-9-]+)/.exec(location.hash); if (!m) return ''; try { history.replaceState(null, '', location.pathname + location.search + '#/'); } catch (e) {} return cleanCode(m[1]); })();
