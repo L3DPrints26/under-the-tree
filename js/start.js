@@ -8,6 +8,12 @@
 
   /* what changed, newest first. Only things that are really in the app. */
   const NEWS = [
+    { id: '2026-11-20', date: 'November 20', title: 'Invites, and wishes for the little ones', items: [
+      'Invite people with a link. They tap it and the code is already filled in.',
+      'Someone with no phone of their own? Mark them in People and anyone in the group can add their wishes.',
+      'Secret Santa: tap your pick again to take your vote back.',
+      'Your ornament photo: two fingers zoom, turn and move it.',
+      'On Apple Watch, Present Catch is harder, the crown is calmer, and the sack only moves when you drag it.'] },
     { id: '2026-11-19', date: 'November 19', title: 'A front page and a tutorial', items: [
       'This front page, and a tutorial that points at each button.',
       'Call people what you call them: tap someone in People and pick Dad, Daddy, Papa or your own.',
