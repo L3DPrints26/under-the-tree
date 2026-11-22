@@ -446,9 +446,10 @@
         '<div class="adv-day-main"><span class="chip ' + k.chip + '">' + App.icon(k.icon, 14) + k.label + '</span>' +
         '<p class="adv-day-text">' + App.esc(joke ? d.x[0] : d.x) + '</p>' +
         (joke ? '<p class="adv-day-punch">' + App.esc(d.x[1]) + '</p>' : '') + '</div>' +
-        '<div class="pz"></div><button type="button" class="btn primary block" data-close>Close</button></div>',
+        '<div class="pz"></div><div class="sv-host"></div><button type="button" class="btn primary block" data-close style="margin-top:14px">Close</button></div>',
       onMount(el) {
         if (App.prizes) App.prizes.panel(el.querySelector('.pz'), season().year, day, d.t === 'm' ? d.x : '');
+        if (App.service) App.service.panel(el.querySelector('.sv-host'), season().year, day);
         if (day !== 25 || !App.fx || !App.fx.confetti) return;
         later(() => { const r = el.getBoundingClientRect(); App.fx.confetti(r.left + r.width / 2, r.top + 40, 140); }, 260);
       }
