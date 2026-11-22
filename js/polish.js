@@ -32,6 +32,13 @@
     .iconpick{display:flex;gap:8px;overflow-x:auto;padding:2px 0 6px;scrollbar-width:none}
     .iconpick::-webkit-scrollbar{display:none}
     .iconpick button{flex:none;width:52px;height:52px;border-radius:14px;display:grid;place-items:center}
+    /* ---- hold and drag a wish ---- */
+    .wcard[data-id]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+    .wcard[data-id] img{-webkit-user-drag:none}
+    .reel.fm-dragging{scroll-snap-type:none!important;touch-action:none}
+    .wcard.fm-ph{opacity:.22;filter:grayscale(.5)}
+    .wcard.fm-ghost{position:fixed!important;z-index:9999;margin:0;pointer-events:none;transform:scale(1.07) rotate(2.5deg);transform-origin:50% 40%;box-shadow:0 26px 54px rgba(0,0,0,.6),0 0 0 2px rgba(233,196,106,.7);opacity:.98;transition:none;animation:fm-lift .16s ease-out}
+    @keyframes fm-lift{from{transform:scale(1) rotate(0)}to{transform:scale(1.07) rotate(2.5deg)}}
     /* ---- an empty list ---- */
     .fm-empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:26px 16px}
     .fm-gift{display:grid;place-items:center;width:104px;height:104px;border-radius:50%;color:var(--gold-ink);background:radial-gradient(circle at 35% 30%,#fff1b8,var(--gold) 55%,#b8860f);box-shadow:0 10px 26px rgba(0,0,0,.4),inset 0 -4px 10px rgba(120,70,0,.3)}

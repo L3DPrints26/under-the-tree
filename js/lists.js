@@ -7,6 +7,7 @@
   A.features = A.features || {};
   if (A.features.picks === undefined) A.features.picks = false;
   const PICKS = () => !!A.features.picks;
+  let dragEnd = 0;
 
   /* ---------- data ---------- */
   const blank = () => ({ id: A.uid(), name: '', price: '', photos: [], links: [], why: [], note: '', icon: 'gift', top: false, santa: false, backup: null });
@@ -35,6 +36,8 @@
     },
     save() { A.store.set('lists', lists); A.store.set('plans', plans); A.store.set('share', share); },
     items: n => (lists[n] ? lists[n].items : []),
+    order: n => (lists[n] && Array.isArray(lists[n].order) ? lists[n].order : []),
+    setOrder(n, ids) { if (lists[n]) lists[n].order = ids.slice(); },
     find: (n, id) => A.data.items(n).find(x => x.id === id),
     /* take a wish off someone's list, and out of everyone's picks */
     remove(n, id) {
@@ -47,7 +50,13 @@
   const rank = x => (x.got ? -4 : 0) + (x.top ? 2 : 0) + (x.santa ? 1 : 0);
   /* a wish you hid stays off your screen (your own list always shows whole) */
   const shown = n => (n === A.me() || !A.safety ? A.data.items(n) : A.data.items(n).filter(it => !A.safety.hiddenWish(it.id)));
-  const sorted = n => shown(n).slice().sort((a, b) => rank(b) - rank(a));
+  /* the order the person chose by hand (hold and drag); wishes they got go last, and a new wish goes at the end. With no order set, most wanted goes first. */
+  const sorted = n => {
+    const arr = shown(n).slice(), ord = A.data.order(n);
+    if (!ord.length) return arr.sort((a, b) => rank(b) - rank(a));
+    const ix = it => { const i = ord.indexOf(it.id); return i < 0 ? 1e6 : i; };
+    return arr.sort((a, b) => ((a.got ? 1 : 0) - (b.got ? 1 : 0)) || (ix(a) - ix(b)) || (rank(b) - rank(a)));
+  };
   /* January still counts as last Christmas. From February the next season starts and received gifts move to Past years. */
   const seasonYear = () => { const d = A.now(); return d.getMonth() === 0 ? d.getFullYear() - 1 : d.getFullYear(); };
   function rollover() {
@@ -141,6 +150,77 @@
       (PICKS() ? '' : gettingNote(who, mp, nTaken)) +
       '<div class="wacts">' + act + '</div></div></article>';
   }
+  /* Hold a wish on your own list and it floats; drag it where you want people to see it. It moves one place at a time (the finger has to get
+     well inside the next card, and it waits a moment before the next move), and the list slides along when you reach the edge.
+     The order is saved with the list, so everyone sees it that way. */
+  function wireDrag(reel, who) {
+    let st = null, held = 0, raf = 0;
+    const cards = () => $$('.wcard[data-id]', reel);
+    const stop = () => { clearTimeout(held); cancelAnimationFrame(raf); st = null; };
+    const consider = now => {
+      if (!st || !st.on || now - st.lastSwap < 240) return;
+      const n = cards().filter(x => x !== st.c).find(o => { const r = o.getBoundingClientRect(); return st.px >= r.left && st.px <= r.right; });
+      if (!n) return;
+      const r = n.getBoundingClientRect();
+      if (Math.abs(st.px - (r.left + r.width / 2)) > r.width * 0.28) return;        /* only when the finger is well inside it */
+      const all = cards();
+      if (all.indexOf(n) > all.indexOf(st.c)) n.after(st.c); else n.before(st.c);
+      st.lastSwap = now;
+      if (navigator.vibrate) navigator.vibrate(8);
+    };
+    const loop = now => {
+      if (!st || !st.on) return;
+      const rr = reel.getBoundingClientRect(), edge = Math.min(70, rr.width * 0.18);
+      if (st.px < rr.left + edge) reel.scrollLeft -= Math.ceil(12 * (1 - (st.px - rr.left) / edge));
+      else if (st.px > rr.right - edge) reel.scrollLeft += Math.ceil(12 * (1 - (rr.right - st.px) / edge));
+      consider(now);
+      raf = requestAnimationFrame(loop);
+    };
+    const start = () => {
+      if (!st) return;
+      st.on = true; st.px = st.x; st.py = st.y;
+      const r = st.c.getBoundingClientRect(), g = st.c.cloneNode(true);
+      g.classList.add('fm-ghost'); g.removeAttribute('data-id');
+      g.style.cssText = 'left:' + r.left + 'px;top:' + r.top + 'px;width:' + r.width + 'px;height:' + r.height + 'px';
+      document.body.appendChild(g);
+      st.ghost = g; st.ox = st.x - r.left; st.oy = st.y - r.top;
+      st.c.classList.add('fm-ph'); reel.classList.add('fm-dragging');
+      try { reel.setPointerCapture(st.pid); } catch (e) {}
+      if (navigator.vibrate) navigator.vibrate(14);
+      raf = requestAnimationFrame(loop);
+    };
+    const finish = () => {
+      if (!st) return;
+      if (!st.on) { stop(); return; }
+      const ids = cards().map(x => x.dataset.id), id = st.id;
+      st.ghost.remove(); st.c.classList.remove('fm-ph'); reel.classList.remove('fm-dragging');
+      dragEnd = Date.now(); stop();
+      A.data.setOrder(who, ids); A.data.save();
+      A.refresh();
+      const nc = document.querySelector('.wcard[data-id="' + id + '"]');
+      if (nc && nc.scrollIntoView) nc.scrollIntoView({ inline: 'center', block: 'nearest' });
+      A.ui.toast('Moved. Everyone sees your list in this order.');
+    };
+    reel.addEventListener('pointerdown', e => {
+      const c = e.target.closest('.wcard[data-id]');
+      if (!c || e.target.closest('button,a,input,textarea') || (e.pointerType === 'mouse' && e.button !== 0)) return;
+      stop();
+      st = { c: c, id: c.dataset.id, x: e.clientX, y: e.clientY, pid: e.pointerId, on: false, lastSwap: 0 };
+      held = setTimeout(start, 420);
+    });
+    reel.addEventListener('pointermove', e => {
+      if (!st) return;
+      if (!st.on) { if (Math.hypot(e.clientX - st.x, e.clientY - st.y) > 10) stop(); return; }      /* moved before the hold: it is a scroll */
+      st.px = e.clientX; st.py = e.clientY;
+      st.ghost.style.left = (e.clientX - st.ox) + 'px'; st.ghost.style.top = (e.clientY - st.oy) + 'px';
+      consider(performance.now());
+    });
+    reel.addEventListener('pointerup', finish);
+    reel.addEventListener('pointercancel', () => { if (st && st.on) finish(); else stop(); });
+    reel.addEventListener('touchmove', e => { if (st && st.on && e.cancelable) e.preventDefault(); }, { passive: false });
+    reel.addEventListener('contextmenu', e => { if (st) e.preventDefault(); });
+  }
+
   /* the first thing you see on an empty list: a friendly start with ideas to tap */
   const IDEAS = [['Headphones', 'headphones'], ['A book', 'book'], ['Video game', 'game'], ['A hoodie', 'shirt'], ['Sneakers', 'shoe'], ['LEGO set', 'toy'], ['Soccer ball', 'ball'], ['Art supplies', 'art']];
   const emptyMine = () => '<div class="empty fm-empty"><div class="fm-gift">' + A.icon('gift', 56) + '</div><h2>What are you hoping for?</h2><p>Add a wish. A photo and a price make it easy to shop for you.</p>' +
@@ -160,7 +240,7 @@
       }
       const help = !mine && helps(who);
       const items = sorted(who), picked = mine ? 0 : items.filter(i => myPlan(i.id)).length;
-      const sub = items.length ? items.length + (items.length === 1 ? ' wish' : ' wishes') + (picked && PICKS() ? ', ' + picked + ' in your picks' : '') + (who === A.me() ? '. Everyone can see your list.' : '') : 'Nothing here yet';
+      const sub = items.length ? items.length + (items.length === 1 ? ' wish' : ' wishes') + (picked && PICKS() ? ', ' + picked + ' in your picks' : '') + (who === A.me() ? '. Everyone can see your list.' + (items.length > 1 ? ' Hold a wish and drag to put them in order.' : '') : '') : 'Nothing here yet';
       root.innerHTML = '<div class="phead"><a class="icon-btn solid" href="#/" aria-label="Back">' + A.icon('back') + '</a>' + A.ui.avatar(who, 40) +
         '<div class="ttl"><h1 class="h1">' + (mine ? 'Your list' : esc(A.poss(who)) + ' list') + '</h1><p>' + sub + '</p></div>' +
         '<button class="icon-btn solid" id="pastBtn" aria-label="Past gifts">' + A.icon('clock', 20) + '</button>' +
@@ -176,11 +256,13 @@
       $('#pastBtn', root).onclick = () => openPast(who);
       if (A.about) A.about.wire(root, who);
       const reel = $('#reel', root); if (!reel) return;
+      if (mine && items.length > 1) wireDrag(reel, who);
       const cards = $$('.wcard', reel), dots = $('#dots', root);
       dots.innerHTML = cards.length > 1 && cards.length <= 14 ? cards.map((c, i) => '<i' + (i ? '' : ' class="on"') + '></i>').join('') : '';
       let raf = 0; reel.addEventListener('scroll', () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { const x = reel.scrollLeft + reel.clientWidth / 2; let best = 0, bd = 1e9; cards.forEach((c, i) => { const d = Math.abs(c.offsetLeft + c.offsetWidth / 2 - x); if (d < bd) { bd = d; best = i; } }); $$('i', dots).forEach((d, i) => d.classList.toggle('on', i === best)); }); }, { passive: true });
       reel.addEventListener('wheel', e => { if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { reel.scrollLeft += e.deltaY; e.preventDefault(); } }, { passive: false });
       reel.addEventListener('click', e => {
+        if (Date.now() - dragEnd < 300) return;
         const ed = e.target.closest('[data-edit]'), pl = e.target.closest('[data-plan]'), card = e.target.closest('.wcard[data-id]');
         const got = e.target.closest('[data-got]');
         if (got) { const it = A.data.find(who, got.dataset.got); if (it) { it.got = it.got ? 0 : seasonYear(); const r = got.getBoundingClientRect(); if (it.got && A.fx) A.fx.confetti(r.left + r.width / 2, r.top, 30); A.data.save(); A.refresh(); } return; }
@@ -329,6 +411,7 @@
           const arr = A.data.items(who);
           if (rec.top) arr.forEach(x => { if (x.id !== rec.id) x.top = false; });
           if (rec.santa) arr.forEach(x => { if (x.id !== rec.id) x.santa = false; });
+          if (rec.top && A.data.order(who).length) lists[who].order = [rec.id].concat(A.data.order(who).filter(x => x !== rec.id));
           const i = arr.findIndex(x => x.id === rec.id); if (i >= 0) arr[i] = rec; else arr.push(rec);
           A.data.save(); close(); A.refresh(); if (!editing && arr.length === 1 && A.fx && A.fx.confetti) A.fx.confetti(window.innerWidth / 2, window.innerHeight * .4, 70); A.ui.toast(editing ? 'Saved.' : who === A.me() ? 'Added to your list.' : 'Added to ' + A.poss(who) + ' list.');
         };
