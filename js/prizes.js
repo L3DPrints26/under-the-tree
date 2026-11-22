@@ -126,7 +126,7 @@
     if (!host) return;
     const p = ensure(year, day, false), t = tier(day), key = year + '-' + day + 'b';
     host.innerHTML = '<span class="pz-tier t' + t + '">' + TIER_NAME[t] + '</span>' + card(p) +
-      '<div class="pz-act"><b>Today’s activity</b><p>' + esc(activity(year, day, mission)) + '</p><div class="pz-slot"></div></div>';
+      '<div class="pz-act k-q"><div class="sv-top"><span class="sv-ic">' + A.icon('todo', 28) + '</span><span><small class="sv-lab">Today’s activity</small></span></div><p class="sv-t">' + esc(activity(year, day, mission)) + '</p><div class="pz-slot"></div></div>';
     const slot = host.querySelector('.pz-slot');
     function show(fresh) {
       const b = get().got[key];
