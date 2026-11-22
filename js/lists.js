@@ -132,7 +132,7 @@
     const act = mine ? '<button class="btn sm" data-edit="' + it.id + '">' + A.icon('pencil', 16) + 'Edit</button><button class="btn sm' + (it.got ? ' green' : '') + '" data-got="' + it.id + '">' + A.icon('check', 16) + (it.got ? 'Got it' : 'I got this') + '</button>'
       : (helps(who) ? '<button class="btn sm" data-edit="' + it.id + '">' + A.icon('pencil', 16) + 'Edit</button>' : '') + '<button class="btn sm' + (mp ? ' primary' : '') + '" data-plan="' + it.id + '">' + A.icon(PICKS() ? (mp ? 'check' : 'lock') : (mp ? 'check' : 'gift'), 16) + (mp ? (PICKS() ? PLAN[mp] : 'You are getting this') : !PICKS() ? 'I am getting this' : (helps(who) ? 'My pick' : 'Add to my picks')) + '</button>';
     return '<article class="wcard' + (it.top ? ' is-top' : '') + (it.got ? ' is-got' : '') + '" data-id="' + it.id + '" style="--c2:' + p.c[1] + ';--c3:' + p.c[2] + '">' +
-      '<div class="wpic">' + (src ? photoBox(src) : A.icon(it.icon || 'gift', 64, 'ph')) +
+      '<div class="wpic">' + (src ? photoBox(src) : (A.illus ? A.illus(it.icon || 'gift', 64, 'ph') : A.icon(it.icon || 'gift', 64, 'ph'))) +
       '<div class="wbadges">' + (it.got ? '<span class="chip green">' + A.icon('check') + (mine ? 'You got it' : esc(who) + ' got this') + '</span>' : badges(it)) + '</div>' + (n > 1 ? '<span class="wcount">' + A.icon('photo', 14) + n + '</span>' : '') + '</div>' +
       '<div class="wbody"><h3 class="wtitle">' + esc(it.name) + '</h3>' + (it.price ? '<div class="wprice">' + esc(it.price) + '</div>' : '') +
       ((it.why && it.why[0]) || it.note ? '<p class="wwhy">' + esc((it.why && it.why[0]) || it.note) + '</p>' : '') +
@@ -145,7 +145,7 @@
   const IDEAS = [['Headphones', 'headphones'], ['A book', 'book'], ['Video game', 'game'], ['A hoodie', 'shirt'], ['Sneakers', 'shoe'], ['LEGO set', 'toy'], ['Soccer ball', 'ball'], ['Art supplies', 'art']];
   const emptyMine = () => '<div class="empty fm-empty"><div class="fm-gift">' + A.icon('gift', 56) + '</div><h2>What are you hoping for?</h2><p>Add a wish. A photo and a price make it easy to shop for you.</p>' +
     '<button class="btn primary" data-add>' + A.icon('plus', 18) + 'Add my first wish</button><p class="fm-or">Or start with an idea</p>' +
-    '<div class="fm-ideas">' + IDEAS.map(x => '<button type="button" class="fm-idea" data-idea="' + x[0] + '|' + x[1] + '">' + A.icon(x[1], 18) + esc(x[0]) + '</button>').join('') + '</div></div>';
+    '<div class="fm-ideas">' + IDEAS.map(x => '<button type="button" class="fm-idea" data-idea="' + x[0] + '|' + x[1] + '">' + (A.illus ? A.illus(x[1], 26) : A.icon(x[1], 18)) + esc(x[0]) + '</button>').join('') + '</div></div>';
   A.openPicks = () => openPicks();
   A.pages.list = {
     tab: 'home',
@@ -230,7 +230,7 @@
       : (helps(who) ? '<button class="btn" data-edit>' + A.icon('pencil', 18) + 'Edit</button>' : '') + '<button class="btn' + (mp ? ' primary' : '') + '" data-plan>' + A.icon(PICKS() ? (mp ? 'check' : 'lock') : (mp ? 'check' : 'gift'), 18) + (mp ? (PICKS() ? PLAN[mp] : 'You are getting this') : PICKS() ? 'Add to my picks' : 'I am getting this') + '</button>';
     return A.ui.sheet({
       title: mine ? 'Your wish' : A.poss(who) + ' wish', wide: true,
-      html: '<div class="gal">' + (pics.length ? pics.map(s => '<div>' + photoBox(s) + '</div>').join('') : '<div>' + A.icon(it.icon || 'gift', 90, 'ph') + '</div>') + '</div>' +
+      html: '<div class="gal">' + (pics.length ? pics.map(s => '<div>' + photoBox(s) + '</div>').join('') : '<div>' + (A.illus ? A.illus(it.icon || 'gift', 90, 'ph') : A.icon(it.icon || 'gift', 90, 'ph')) + '</div>') + '</div>' +
         (pics.length > 1 ? '<p class="muted small center" style="margin-top:6px">Swipe for ' + pics.length + ' photos</p>' : '') +
         '<h3 class="d-title">' + esc(it.name) + '</h3>' + (it.price ? '<div class="d-price">' + esc(it.price) + '</div>' : '') +
         (it.top || it.santa ? '<div class="row gap-s wrap" style="margin-top:10px">' + badges(it) + '</div>' : '') +
@@ -263,7 +263,7 @@
         '<div class="fm-prev" style="--c1:' + A.person(who).c[0] + ';--c2:' + A.person(who).c[2] + '"><div class="fm-pic" id="fmPic"></div><div class="fm-txt"><b id="fmName"></b><span class="fm-price" id="fmPrice"></span></div></div>' +
         '<label class="field fm-big"><span>What do you want?</span><input class="input" id="fName" maxlength="90" value="' + esc(it.name) + '" placeholder="Wireless headphones"></label>' +
         '<div class="field"><span class="label">About how much?</span><div class="fm-chips" id="fPrices">' + ['$10', '$25', '$50', '$100', '$200'].map(p => '<button type="button" data-p="' + p + '">' + p + '</button>').join('') + '</div><input class="input" id="fPrice" maxlength="40" value="' + esc(it.price) + '" placeholder="Or type your own" inputmode="text"></div>' +
-        '<div class="field"><span class="label">Picture</span><div class="drop" id="drop"></div><input type="file" id="fFile" accept="image/*" multiple hidden><div class="iconpick" id="fIcons" style="margin-top:10px">' + A.wishIcons.map(n => '<button type="button" data-ic="' + n + '"' + (n === icon ? ' class="on"' : '') + ' aria-label="' + n + '">' + A.icon(n, 22) + '</button>').join('') + '</div></div>' +
+        '<div class="field"><span class="label">Picture</span><div class="drop" id="drop"></div><input type="file" id="fFile" accept="image/*" multiple hidden><div class="iconpick" id="fIcons" style="margin-top:10px">' + A.wishIcons.map(n => '<button type="button" data-ic="' + n + '"' + (n === icon ? ' class="on"' : '') + ' aria-label="' + n + '">' + (A.illus ? A.illus(n, 36) : A.icon(n, 22)) + '</button>').join('') + '</div></div>' +
         '<div class="fm-tog2"><label class="fm-tog"><input type="checkbox" id="fTop"' + (it.top ? ' checked' : '') + '><span>' + A.icon('star', 28) + '<b>Most wanted</b><small>Your number one</small></span></label>' +
         '<label class="fm-tog"><input type="checkbox" id="fSanta"' + (it.santa ? ' checked' : '') + '><span>' + A.icon('hat', 28) + '<b>From Santa</b><small>Ask Santa for it</small></span></label></div>' +
         '<p class="fm-more">More about it, if you want</p>' +
@@ -311,7 +311,7 @@
           pName.textContent = $('#fName', el).value.trim() || 'Your wish';
           const pr = $('#fPrice', el).value.trim(); pPrice.textContent = pr; pPrice.style.display = pr ? '' : 'none';
           const ph = photos[0] && A.photos.src(photos[0]);
-          pPic.innerHTML = ph ? '<img src="' + esc(ph) + '" alt="">' : A.icon(icon, 42);
+          pPic.innerHTML = ph ? '<img src="' + esc(ph) + '" alt="">' : (A.illus ? A.illus(icon, 58) : A.icon(icon, 42));
           $$('#fPrices button', el).forEach(x => x.classList.toggle('on', x.dataset.p === $('#fPrice', el).value.trim()));
         };
         ['#fName', '#fPrice'].forEach(q => $(q, el).addEventListener('input', prev));

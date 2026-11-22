@@ -11,7 +11,7 @@
     .fm-pic{flex:none;display:grid;place-items:center;width:84px;height:84px;border-radius:18px;overflow:hidden;color:#fff;background:rgba(255,255,255,.16);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.35)}
     .fm-pic img{width:100%;height:100%;object-fit:cover}
     .fm-pic svg{filter:drop-shadow(0 2px 4px rgba(0,0,0,.3))}
-    .fm-pic svg :is(path,circle,rect,ellipse,polygon){fill:currentColor;fill-opacity:.22}
+    .fm-pic svg:not(.illus) :is(path,circle,rect,ellipse,polygon){fill:currentColor;fill-opacity:.22}
     .fm-txt{min-width:0;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
     .fm-txt b{font-family:var(--display);font-size:clamp(20px,6vw,26px);font-weight:600;line-height:1.1;color:#fff;overflow-wrap:anywhere}
     .fm-price{padding:3px 11px;border-radius:999px;font-size:13.5px;font-weight:800;background:rgba(0,0,0,.28);color:#fff}
@@ -31,7 +31,7 @@
     .fm-d{margin-bottom:8px}
     .iconpick{display:flex;gap:8px;overflow-x:auto;padding:2px 0 6px;scrollbar-width:none}
     .iconpick::-webkit-scrollbar{display:none}
-    .iconpick button{flex:none;width:46px;height:46px;border-radius:14px}
+    .iconpick button{flex:none;width:52px;height:52px;border-radius:14px;display:grid;place-items:center}
     /* ---- an empty list ---- */
     .fm-empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:26px 16px}
     .fm-gift{display:grid;place-items:center;width:104px;height:104px;border-radius:50%;color:var(--gold-ink);background:radial-gradient(circle at 35% 30%,#fff1b8,var(--gold) 55%,#b8860f);box-shadow:0 10px 26px rgba(0,0,0,.4),inset 0 -4px 10px rgba(120,70,0,.3)}

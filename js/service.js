@@ -163,9 +163,10 @@
     .sv-none{grid-column:1/-1;padding:24px 0;text-align:center;color:var(--muted)}
     /* the pictures behind the doors: a soft color fill and a little shadow, so they do not look like thin outlines */
     .adv-in-art svg,.adv-day-art svg,svg.ph{filter:drop-shadow(0 2px 4px rgba(60,20,0,.35))}
+    .fm-pic svg.illus{filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
     .adv-in-art svg.illus,.adv-day-art svg.illus{stroke:none}
     .adv-in-art svg.illus{width:calc(var(--u)*.64);height:calc(var(--u)*.64)}
-    .adv-in-art svg:not(.illus) :is(path,circle,rect,ellipse,polygon),.adv-day-art svg:not(.illus) :is(path,circle,rect,ellipse,polygon),svg.ph :is(path,circle,rect,ellipse,polygon){fill:currentColor;fill-opacity:.2}
+    .adv-in-art svg:not(.illus) :is(path,circle,rect,ellipse,polygon),.adv-day-art svg:not(.illus) :is(path,circle,rect,ellipse,polygon),svg.ph:not(.illus) :is(path,circle,rect,ellipse,polygon){fill:currentColor;fill-opacity:.2}
   `);
 
   const chips = it => '<span class="sv-chip k">' + KINDS[it.k][0] + '</span><span class="sv-chip">' + A.icon('clock', 13) + KINDS[it.k][1] + '</span>' + (/parent/i.test(it.t) ? '<span class="sv-chip">' + A.icon('users', 13) + 'With a parent</span>' : '');
