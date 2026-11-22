@@ -521,7 +521,7 @@
     const best = A.store.get('santaBest', {}) || {}, me = A.me(), mine = +best[me] || 0;
     const top = A.names.filter(n => (n === me || !(A.privacy && A.privacy.hidesScores(n))) && +best[n] > 0).sort((p, q) => best[q] - best[p])[0];
     return '<button type="button" class="gm-tile" data-santa aria-label="Play Tap Santa">' +
-      '<div class="gm-art" style="background:linear-gradient(160deg,#34126b,#0b1730);display:grid;place-items:center;color:#f1d27c">' + A.icon('sleigh', 72) + '</div>' +
+      '<div class="gm-art" style="background:#1a1048">' + (A.santaArt ? A.santaArt() : A.icon('sleigh', 72)) + '</div>' +
       '<div class="gm-info"><div class="gm-name"><span>Tap Santa</span>' + A.icon('next', 20) + '</div>' +
       '<p class="gm-how">Santa zooms across the screen. Tap him as many times as you can in 16 seconds.</p>' +
       '<div class="gm-rows"><div class="gm-row">' + A.ui.avatar(me, 22) + '<span class="gm-who">Your best</span>' + (mine ? '<b>' + mine + '</b>' : '<em>None yet</em>') + '</div>' +

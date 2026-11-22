@@ -141,6 +141,11 @@
       (PICKS() ? '' : gettingNote(who, mp, nTaken)) +
       '<div class="wacts">' + act + '</div></div></article>';
   }
+  /* the first thing you see on an empty list: a friendly start with ideas to tap */
+  const IDEAS = [['Headphones', 'headphones'], ['A book', 'book'], ['Video game', 'game'], ['A hoodie', 'shirt'], ['Sneakers', 'shoe'], ['LEGO set', 'toy'], ['Soccer ball', 'ball'], ['Art supplies', 'art']];
+  const emptyMine = () => '<div class="empty fm-empty"><div class="fm-gift">' + A.icon('gift', 56) + '</div><h2>What are you hoping for?</h2><p>Add a wish. A photo and a price make it easy to shop for you.</p>' +
+    '<button class="btn primary" data-add>' + A.icon('plus', 18) + 'Add my first wish</button><p class="fm-or">Or start with an idea</p>' +
+    '<div class="fm-ideas">' + IDEAS.map(x => '<button type="button" class="fm-idea" data-idea="' + x[0] + '|' + x[1] + '">' + A.icon(x[1], 18) + esc(x[0]) + '</button>').join('') + '</div></div>';
   A.openPicks = () => openPicks();
   A.pages.list = {
     tab: 'home',
@@ -164,8 +169,9 @@
         (help && items.length ? '<button class="np-strip" data-add>' + A.icon('plus', 18) + '<span><b>Add a wish for ' + esc(who) + '</b><small>No phone, so anyone in the group can add for ' + esc(who) + '.</small></span></button>' : '') +
         (items.length
           ? '<div class="reel" id="reel">' + items.map(it => cardHTML(who, it, mine)).join('') + (mine || help ? '<button class="wcard addcard" data-add>' + A.icon('plus', 30) + '<span>' + (mine ? 'Add a wish' : 'Add a wish for ' + esc(who)) + '</span></button>' : '') + '</div><div class="dots" id="dots"></div>'
-          : '<div class="empty">' + A.icon('gift', 54) + '<p>' + (mine ? 'Add the first thing you are hoping for. A photo and a link make it easy to shop for you.' : help ? esc(who) + ' has no phone of their own, so add what ' + esc(who) + ' is hoping for.' : esc(who) + ' has not added anything yet.') + '</p>' + (mine || help ? '<button class="btn primary" data-add>' + A.icon('plus', 18) + (mine ? 'Add a wish' : 'Add a wish for ' + esc(who)) + '</button>' : '') + '</div>');
+          : mine ? emptyMine() : '<div class="empty">' + A.icon('gift', 54) + '<p>' + (mine ? 'Add the first thing you are hoping for. A photo and a link make it easy to shop for you.' : help ? esc(who) + ' has no phone of their own, so add what ' + esc(who) + ' is hoping for.' : esc(who) + ' has not added anything yet.') + '</p>' + (mine || help ? '<button class="btn primary" data-add>' + A.icon('plus', 18) + (mine ? 'Add a wish' : 'Add a wish for ' + esc(who)) + '</button>' : '') + '</div>');
       $$('[data-add]', root).forEach(b => b.onclick = () => openForm(who, null));
+      $$('[data-idea]', root).forEach(b => b.onclick = () => openForm(who, null, b.dataset.idea.split('|')));
       const pb = $('#picksBtn', root); if (pb) pb.onclick = openPicks;
       $('#pastBtn', root).onclick = () => openPast(who);
       if (A.about) A.about.wire(root, who);
@@ -246,30 +252,34 @@
   }
 
   /* ---------- add / edit ---------- */
-  function openForm(who, id) {
+  function openForm(who, id, preset) {
     const editing = !!id, src = editing ? A.data.find(who, id) : null, it = Object.assign(blank(), JSON.parse(JSON.stringify(src || {})));
     let photos = (it.photos || []).slice(), links = (it.links && it.links.length ? it.links : ['']).slice(), icon = it.icon || 'gift';
     const b = it.backup || {};
+    if (!editing && preset) { it.name = preset[0]; icon = preset[1]; }
     A.ui.sheet({
       title: (editing ? 'Edit wish' : 'Add a wish') + (who !== A.me() ? ' for ' + who : ''), wide: true,
-      html: (A.linkFill ? A.linkFill.boxHTML() : '') + '<label class="field"><span>What is it?</span><input class="input" id="fName" maxlength="90" value="' + esc(it.name) + '" placeholder="Wireless headphones"></label>' +
-        '<label class="field"><span>About how much?</span><input class="input" id="fPrice" maxlength="40" value="' + esc(it.price) + '" placeholder="$40" inputmode="text"></label>' +
-        '<div class="field"><span class="label">Photos</span><div class="drop" id="drop"></div><input type="file" id="fFile" accept="image/*" multiple hidden></div>' +
-        '<div class="field"><span class="label">Links</span><div id="fLinks"></div><button type="button" class="btn sm" id="addLink">' + A.icon('plus', 16) + 'Add another link</button></div>' +
-        '<label class="field"><span>Why would you love it? One reason per line.</span><textarea class="input" id="fWhy" maxlength="900" placeholder="I would use it every day">' + esc((it.why || []).join('\n')) + '</textarea></label>' +
-        '<label class="field"><span>Anything else they should know? Size, color, which version.</span><textarea class="input" id="fNote" maxlength="600" style="min-height:70px">' + esc(it.note) + '</textarea></label>' +
-        '<label class="switch"><span class="s-text"><b>Most wanted</b><small>Your number one. Only one wish can have this.</small></span><input type="checkbox" id="fTop"' + (it.top ? ' checked' : '') + '></label>' +
-        '<label class="switch"><span class="s-text"><b>Ask Santa for this one</b><small>The gift you want from Santa. Only one wish can have this.</small></span><input type="checkbox" id="fSanta"' + (it.santa ? ' checked' : '') + '></label>' +
-        '<details class="fold"' + (b.name ? ' open' : '') + '><summary><span>Backup option<small id="bState"></small></span>' + A.icon('next', 18) + '</summary>' +
-          '<p class="muted small" style="margin-bottom:12px">Something that would also be great if the first choice does not work out.</p>' +
+      html: (A.linkFill ? A.linkFill.boxHTML() : '') +
+        '<div class="fm-prev" style="--c1:' + A.person(who).c[0] + ';--c2:' + A.person(who).c[2] + '"><div class="fm-pic" id="fmPic"></div><div class="fm-txt"><b id="fmName"></b><span class="fm-price" id="fmPrice"></span></div></div>' +
+        '<label class="field fm-big"><span>What do you want?</span><input class="input" id="fName" maxlength="90" value="' + esc(it.name) + '" placeholder="Wireless headphones"></label>' +
+        '<div class="field"><span class="label">About how much?</span><div class="fm-chips" id="fPrices">' + ['$10', '$25', '$50', '$100', '$200'].map(p => '<button type="button" data-p="' + p + '">' + p + '</button>').join('') + '</div><input class="input" id="fPrice" maxlength="40" value="' + esc(it.price) + '" placeholder="Or type your own" inputmode="text"></div>' +
+        '<div class="field"><span class="label">Picture</span><div class="drop" id="drop"></div><input type="file" id="fFile" accept="image/*" multiple hidden><div class="iconpick" id="fIcons" style="margin-top:10px">' + A.wishIcons.map(n => '<button type="button" data-ic="' + n + '"' + (n === icon ? ' class="on"' : '') + ' aria-label="' + n + '">' + A.icon(n, 22) + '</button>').join('') + '</div></div>' +
+        '<div class="fm-tog2"><label class="fm-tog"><input type="checkbox" id="fTop"' + (it.top ? ' checked' : '') + '><span>' + A.icon('star', 28) + '<b>Most wanted</b><small>Your number one</small></span></label>' +
+        '<label class="fm-tog"><input type="checkbox" id="fSanta"' + (it.santa ? ' checked' : '') + '><span>' + A.icon('hat', 28) + '<b>From Santa</b><small>Ask Santa for it</small></span></label></div>' +
+        '<p class="fm-more">More about it, if you want</p>' +
+        '<details class="fold fm-d"' + ((it.why || []).length ? ' open' : '') + '><summary><span>Why you would love it<small>One reason per line</small></span>' + A.icon('next', 18) + '</summary><label class="field" style="margin-top:10px"><textarea class="input" id="fWhy" maxlength="900" placeholder="I would use it every day">' + esc((it.why || []).join('\n')) + '</textarea></label></details>' +
+        '<details class="fold fm-d"' + (links.some(Boolean) ? ' open' : '') + '><summary><span>Where to get it<small>Shop links</small></span>' + A.icon('next', 18) + '</summary><div id="fLinks" style="margin-top:10px"></div><button type="button" class="btn sm" id="addLink">' + A.icon('plus', 16) + 'Add another link</button></details>' +
+        '<details class="fold fm-d"' + (it.note ? ' open' : '') + '><summary><span>Good to know<small>Size, color, which version</small></span>' + A.icon('next', 18) + '</summary><label class="field" style="margin-top:10px"><textarea class="input" id="fNote" maxlength="600" style="min-height:70px">' + esc(it.note) + '</textarea></label></details>' +
+        '<details class="fold fm-d"' + (b.name ? ' open' : '') + '><summary><span>Backup option<small id="bState"></small></span>' + A.icon('next', 18) + '</summary>' +
+          '<p class="muted small" style="margin:10px 0 12px">Something that would also be great if the first choice does not work out.</p>' +
           '<label class="field"><span>Backup</span><input class="input" id="bName" maxlength="90" value="' + esc(b.name || '') + '" placeholder="A different color or model"></label>' +
           '<label class="field"><span>Price</span><input class="input" id="bPrice" maxlength="40" value="' + esc(b.price || '') + '"></label>' +
           '<label class="field"><span>Link</span><input class="input" id="bLink" value="' + esc(b.link || '') + '" placeholder="https://" inputmode="url" autocapitalize="off"></label>' +
           '<label class="field"><span>Note</span><textarea class="input" id="bNote" maxlength="400" style="min-height:64px">' + esc(b.note || '') + '</textarea></label></details>' +
-        '<div class="field"><span class="label">Icon, used when there is no photo</span><div class="iconpick" id="fIcons">' + A.wishIcons.map(n => '<button type="button" data-ic="' + n + '"' + (n === icon ? ' class="on"' : '') + ' aria-label="' + n + '">' + A.icon(n, 22) + '</button>').join('') + '</div></div>' +
         '<div class="sticky-acts">' + (editing ? '<button class="btn danger" id="fDel" style="flex:0 0 auto" aria-label="Remove this wish">' + A.icon('trash', 18) + '</button>' : '') + '<button class="btn primary" id="fSave">' + (editing ? 'Save' : who === A.me() ? 'Add to my list' : 'Add to ' + esc(A.poss(who)) + ' list') + '</button></div>',
       onMount(el, close) {
         const drop = $('#drop', el), file = $('#fFile', el), linksEl = $('#fLinks', el);
+        let prev = () => {};
         /* say plainly whether a backup is set, and keep it true while they type */
         const bState = $('#bState', el), bIn = $('#bName', el);
         const drawBackup = () => { const n = bIn.value.trim(); bState.className = n ? 'set' : ''; bState.innerHTML = n ? A.icon('check', 13) + 'Set: ' + esc(n) : 'Not set. Tap to add one.'; };
@@ -279,6 +289,7 @@
             '<button type="button" class="addphoto" id="pick">' + A.icon('camera', 22) + 'Add photo</button>' + (photos.length ? '' : '<span class="drop-hint">Pick from your photos, take one, or drag a picture here.</span>');
           $('#pick', drop).onclick = () => file.click();
           $$('[data-rm]', drop).forEach(x => x.onclick = () => { photos.splice(+x.dataset.rm, 1); drawPhotos(); });
+          prev();
         };
         const addFiles = fl => Promise.all(Array.from(fl || []).slice(0, 8).map(f => A.photos.fromFile(f).then(pid => photos.push({ id: pid })).catch(() => A.ui.toast('That file is not a picture.')))).then(drawPhotos);
         file.onchange = () => { addFiles(file.files); file.value = ''; };
@@ -294,6 +305,19 @@
         $('#addLink', el).onclick = () => { readLinks(); links.push(''); drawLinks(); const ins = $$('input', linksEl); ins[ins.length - 1].focus(); };
         $('#fIcons', el).onclick = e => { const x = e.target.closest('[data-ic]'); if (!x) return; icon = x.dataset.ic; $$('#fIcons button', el).forEach(q => q.classList.toggle('on', q === x)); };
         drawPhotos(); drawLinks();
+        /* the preview card at the top follows what is typed, picked and added */
+        const pName = $('#fmName', el), pPrice = $('#fmPrice', el), pPic = $('#fmPic', el);
+        prev = () => {
+          pName.textContent = $('#fName', el).value.trim() || 'Your wish';
+          const pr = $('#fPrice', el).value.trim(); pPrice.textContent = pr; pPrice.style.display = pr ? '' : 'none';
+          const ph = photos[0] && A.photos.src(photos[0]);
+          pPic.innerHTML = ph ? '<img src="' + esc(ph) + '" alt="">' : A.icon(icon, 42);
+          $$('#fPrices button', el).forEach(x => x.classList.toggle('on', x.dataset.p === $('#fPrice', el).value.trim()));
+        };
+        ['#fName', '#fPrice'].forEach(q => $(q, el).addEventListener('input', prev));
+        $('#fPrices', el).onclick = e => { const x = e.target.closest('[data-p]'); if (!x) return; $('#fPrice', el).value = x.dataset.p; prev(); };
+        $('#fIcons', el).addEventListener('click', () => setTimeout(prev, 0));
+        prev();
         if (A.linkFill) A.linkFill.wire({ el: el, addPhoto: pid => { photos.push({ id: pid }); drawPhotos(); },
           addLink: u => { readLinks(); if (links.indexOf(u) < 0) { if (links.length === 1 && !links[0].trim()) links[0] = u; else links.push(u); } drawLinks(); } });
         const val = s => $(s, el).value.trim();
@@ -306,7 +330,7 @@
           if (rec.top) arr.forEach(x => { if (x.id !== rec.id) x.top = false; });
           if (rec.santa) arr.forEach(x => { if (x.id !== rec.id) x.santa = false; });
           const i = arr.findIndex(x => x.id === rec.id); if (i >= 0) arr[i] = rec; else arr.push(rec);
-          A.data.save(); close(); A.refresh(); A.ui.toast(editing ? 'Saved.' : who === A.me() ? 'Added to your list.' : 'Added to ' + A.poss(who) + ' list.');
+          A.data.save(); close(); A.refresh(); if (!editing && arr.length === 1 && A.fx && A.fx.confetti) A.fx.confetti(window.innerWidth / 2, window.innerHeight * .4, 70); A.ui.toast(editing ? 'Saved.' : who === A.me() ? 'Added to your list.' : 'Added to ' + A.poss(who) + ' list.');
         };
         const del = $('#fDel', el);
         if (del) del.onclick = () => A.ui.confirm('Take "' + it.name + '" off your list?', 'Take it off', true).then(ok => {
