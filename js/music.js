@@ -9,7 +9,8 @@
     ['Dance of the Sugar Plum Fairy', 'Dance of the Sugar Plum Fairy'], ['It Came Upon a Midnight Clear', 'It Came Upon a Midnight Clear'],
     ['Jingle Bells (calm)', 'Jingle Bells Calm'], ['Deck the Halls (big band)', 'Deck the Halls B'], ['Frost Waltz', 'Frost Waltz'],
     ['Winter Chimes', 'Winter Chimes'], ['What Child Is This', 'Greensleeves'],
-    ['O Come, All Ye Faithful', 'Adeste Fideles Shorter']
+    ['O Come, All Ye Faithful', 'Adeste Fideles Shorter'],
+    ['We Wish You a Merry Christmas', 'We Wish You'], ['Oh Little Town of Bethlehem', 'Bethlehem'], ['Oh Christmas Tree', 'Oh Xmas'], ['Angels We Have Heard (piano)', 'Angels We Have Heard (piano)']
   ];
   /* 'auto' lets the browser start fetching a song the moment it is chosen. A second, silent player fetches
      the next song ahead of time, so skipping does not start from zero. */
@@ -17,7 +18,7 @@
   const ahead = new Audio(); ahead.preload = 'auto'; ahead.muted = true;
   /* The songs are saved inside the app, so they play with no internet. If one is missing, the same song is
      fetched from incompetech.com instead. */
-  const LOCAL = { 'Jingle Bells': 'jingle-bells', 'Deck the Halls A': 'deck-the-halls-a', 'Silent Night': 'silent-night', 'Oh Holy Night': 'oh-holy-night', 'Angels We Have Heard': 'angels-we-have-heard', 'Up on a Housetop': 'up-on-a-housetop', 'Dance of the Sugar Plum Fairy': 'sugar-plum-fairy', 'It Came Upon a Midnight Clear': 'midnight-clear', 'Jingle Bells Calm': 'jingle-bells-calm', 'Deck the Halls B': 'deck-the-halls-b', 'Frost Waltz': 'frost-waltz', 'Winter Chimes': 'winter-chimes', 'Greensleeves': 'greensleeves', 'Adeste Fideles Shorter': 'adeste-fideles' };
+  const LOCAL = { 'Jingle Bells': 'jingle-bells', 'Deck the Halls A': 'deck-the-halls-a', 'Silent Night': 'silent-night', 'Oh Holy Night': 'oh-holy-night', 'Angels We Have Heard': 'angels-we-have-heard', 'Up on a Housetop': 'up-on-a-housetop', 'Dance of the Sugar Plum Fairy': 'sugar-plum-fairy', 'It Came Upon a Midnight Clear': 'midnight-clear', 'Jingle Bells Calm': 'jingle-bells-calm', 'Deck the Halls B': 'deck-the-halls-b', 'Frost Waltz': 'frost-waltz', 'Winter Chimes': 'winter-chimes', 'Greensleeves': 'greensleeves', 'Adeste Fideles Shorter': 'adeste-fideles', 'We Wish You': 'we-wish-you', 'Bethlehem': 'bethlehem', 'Oh Xmas': 'oh-christmas-tree', 'Angels We Have Heard (piano)': 'angels-piano' };
   const remote = i => BASE + encodeURIComponent(TRACKS[(i + TRACKS.length) % TRACKS.length][1]) + '.mp3';
   const url = i => { const f = TRACKS[(i + TRACKS.length) % TRACKS.length][1]; return LOCAL[f] ? 'assets/music/' + LOCAL[f] + '.mp3' : remote(i); };
   let usingRemote = -1;
