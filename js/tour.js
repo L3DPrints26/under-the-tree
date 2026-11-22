@@ -43,7 +43,7 @@
   const inApp = !!(window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform());
   const STEPS = () => [
     { at: () => $('#wordmark'), h: 'Your group', p: 'Tap the name for the menu. That is where you invite people, see who is here and change the background.' },
-    { at: () => $('.orn:not(.me) .ball'), round: true, h: 'Everyone has an ornament', p: 'Tap one to see what that person is hoping for. ' + (A.features && A.features.picks ? 'On a wish, tap Add to my picks. They never see it.' : 'Tap I am getting this to tell the others. They never tell the person it is for.') },
+    { at: () => $('.orn:not(.me) .ball'), round: true, h: 'Everyone has an ornament', p: 'Tap one to see what that person is hoping for. ' + (A.features && A.features.picks ? 'On a wish, tap Add to my picks. They never see it.' : 'Tap I am getting this. Everyone but them will see that someone is.') },
     { at: () => $('.orn.me .ball'), round: true, h: 'This one is you', p: 'Tap your own ornament to add wishes and to take the favorites quiz.' + (inApp ? ' Paste a shop link and the app fills in the rest.' : '') },
     { at: () => $('#tabs'), h: 'More to do', p: 'Secret Santa, the advent calendar and the games live here.' },
     { at: () => $('#player'), h: 'Christmas music', p: 'Tap to pick a song. It keeps playing while you look around.' },

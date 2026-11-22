@@ -88,9 +88,20 @@
   /* picks are private: only the person who made them sees them, plus anyone they chose to share with.
      The person a gift is for never sees picks on their own list. */
   const PLAN = { getting: 'Getting this', bought: 'Already got it' };
-  const myPlan = id => !PICKS() ? '' : (plans[A.me()] || {})[id] || '';
+  const myPlan = id => (plans[A.me()] || {})[id] || '';
   const setPlan = (id, v) => { const p = plans[A.me()] || (plans[A.me()] = {}); if (v) p[id] = v; else p[id] = undefined; };
   const sharedPlans = (id, owner) => !PICKS() ? [] : A.names.filter(g => g !== A.me() && g !== owner && (share[g] || []).indexOf(A.me()) >= 0 && plans[g] && plans[g][id]).map(g => ({ who: g, st: plans[g][id] }));
+  /* The one simple option: "I am getting this". Everyone but the person it is for then sees "Someone is already getting this", never who.
+     It is saved in plans (the same place My picks used), so what people picked before still counts. */
+  const takenBy = (id, owner) => A.names.filter(g => g !== A.me() && g !== owner && plans[g] && plans[g][id]).length;
+  /* a note you cannot miss: it says who must not find out */
+  const gettingNote = (who, mp, n) => (mp || n) ? '<div class="wshh">' + A.icon('lock', 24) + '<span><b>' + (mp && n ? 'Someone else is getting this too' : mp ? 'You are getting this' : 'Someone is already getting this') + '</b><small>' + "Shh! " + esc(who) + " can't see this. Don't tell." + '</small></span></div>' : '';
+  function toggleGetting(who, id) {
+    const was = myPlan(id); setPlan(id, was ? '' : 'getting'); A.data.save();
+    const it = A.data.find(who, id), card = document.querySelector('.wcard[data-id="' + id + '"]');
+    if (card && it) { const t = document.createElement('div'); t.innerHTML = cardHTML(who, it, false); card.replaceWith(t.firstElementChild); }
+    A.ui.toast(was ? 'Taken off.' : 'Saved. Everyone but ' + who + ' will see that someone is getting it.');
+  }
   A.css(`
     .pl-opt{display:flex;align-items:center;gap:12px;width:100%;min-height:58px;padding:10px 14px;border-radius:14px;background:var(--surface2);border:1px solid var(--line);margin-bottom:8px;text-align:left}
     .pl-opt>span{flex:1;min-width:0}.pl-opt b{display:block;font-weight:600}.pl-opt small{color:var(--muted);font-size:12.5px}
@@ -117,9 +128,9 @@
   /* a "no phone" person's list can be added to by anyone, until that person picks their name on a device of their own */
   const helps = who => who !== A.me() && A.noPhone && A.noPhone(who) && !(A.lock && A.lock.has(who));
   function cardHTML(who, it, mine) {
-    const p = A.person(who), src = firstPhoto(it), n = (it.photos || []).length, mp = mine ? '' : myPlan(it.id), others = mine ? [] : sharedPlans(it.id, who);
+    const p = A.person(who), src = firstPhoto(it), n = (it.photos || []).length, mp = mine ? '' : myPlan(it.id), others = mine ? [] : sharedPlans(it.id, who), nTaken = mine || PICKS() ? 0 : takenBy(it.id, who);
     const act = mine ? '<button class="btn sm" data-edit="' + it.id + '">' + A.icon('pencil', 16) + 'Edit</button><button class="btn sm' + (it.got ? ' green' : '') + '" data-got="' + it.id + '">' + A.icon('check', 16) + (it.got ? 'Got it' : 'I got this') + '</button>'
-      : (helps(who) ? '<button class="btn sm" data-edit="' + it.id + '">' + A.icon('pencil', 16) + 'Edit</button>' : '') + '<button class="btn sm' + (mp ? ' primary' : '') + '" data-plan="' + it.id + '">' + A.icon(PICKS() ? (mp ? 'check' : 'lock') : 'gift', 16) + (mp ? PLAN[mp] : !PICKS() ? 'I am getting this' : (helps(who) ? 'My pick' : 'Add to my picks')) + '</button>';
+      : (helps(who) ? '<button class="btn sm" data-edit="' + it.id + '">' + A.icon('pencil', 16) + 'Edit</button>' : '') + '<button class="btn sm' + (mp ? ' primary' : '') + '" data-plan="' + it.id + '">' + A.icon(PICKS() ? (mp ? 'check' : 'lock') : (mp ? 'check' : 'gift'), 16) + (mp ? (PICKS() ? PLAN[mp] : 'You are getting this') : !PICKS() ? 'I am getting this' : (helps(who) ? 'My pick' : 'Add to my picks')) + '</button>';
     return '<article class="wcard' + (it.top ? ' is-top' : '') + (it.got ? ' is-got' : '') + '" data-id="' + it.id + '" style="--c2:' + p.c[1] + ';--c3:' + p.c[2] + '">' +
       '<div class="wpic">' + (src ? photoBox(src) : A.icon(it.icon || 'gift', 64, 'ph')) +
       '<div class="wbadges">' + (it.got ? '<span class="chip green">' + A.icon('check') + (mine ? 'You got it' : esc(who) + ' got this') + '</span>' : badges(it)) + '</div>' + (n > 1 ? '<span class="wcount">' + A.icon('photo', 14) + n + '</span>' : '') + '</div>' +
@@ -127,6 +138,7 @@
       ((it.why && it.why[0]) || it.note ? '<p class="wwhy">' + esc((it.why && it.why[0]) || it.note) + '</p>' : '') +
       (it.backup && it.backup.name ? '<p class="wbackup">' + A.icon('swap', 14) + '<span>Backup: ' + esc(it.backup.name) + '</span></p>' : '') +
       (others.length ? '<div class="wshare">' + others.map(o => '<span class="chip">' + esc(o.who) + ': ' + PLAN[o.st].toLowerCase() + '</span>').join('') + '</div>' : '') +
+      (PICKS() ? '' : gettingNote(who, mp, nTaken)) +
       '<div class="wacts">' + act + '</div></div></article>';
   }
   A.openPicks = () => openPicks();
@@ -143,18 +155,18 @@
       }
       const help = !mine && helps(who);
       const items = sorted(who), picked = mine ? 0 : items.filter(i => myPlan(i.id)).length;
-      const sub = items.length ? items.length + (items.length === 1 ? ' wish' : ' wishes') + (picked ? ', ' + picked + ' in your picks' : '') + (who === A.me() ? '. Everyone can see your list.' : '') : 'Nothing here yet';
+      const sub = items.length ? items.length + (items.length === 1 ? ' wish' : ' wishes') + (picked && PICKS() ? ', ' + picked + ' in your picks' : '') + (who === A.me() ? '. Everyone can see your list.' : '') : 'Nothing here yet';
       root.innerHTML = '<div class="phead"><a class="icon-btn solid" href="#/" aria-label="Back">' + A.icon('back') + '</a>' + A.ui.avatar(who, 40) +
         '<div class="ttl"><h1 class="h1">' + (mine ? 'Your list' : esc(A.poss(who)) + ' list') + '</h1><p>' + sub + '</p></div>' +
         '<button class="icon-btn solid" id="pastBtn" aria-label="Past gifts">' + A.icon('clock', 20) + '</button>' +
-        (mine ? '<button class="btn primary sm" data-add>' + A.icon('plus', 18) + 'Add</button>' : '<button class="btn sm" id="picksBtn">' + (PICKS() ? A.icon('lock', 16) + 'My picks' : A.icon('gift', 16) + 'Tell people') + '</button>') + '</div>' +
+        (mine ? '<button class="btn primary sm" data-add>' + A.icon('plus', 18) + 'Add</button>' : (PICKS() ? '<button class="btn sm" id="picksBtn">' + A.icon('lock', 16) + 'My picks</button>' : '')) + '</div>' +
         (A.about ? A.about.stripHTML(who) : '') +
         (help && items.length ? '<button class="np-strip" data-add>' + A.icon('plus', 18) + '<span><b>Add a wish for ' + esc(who) + '</b><small>No phone, so anyone in the group can add for ' + esc(who) + '.</small></span></button>' : '') +
         (items.length
           ? '<div class="reel" id="reel">' + items.map(it => cardHTML(who, it, mine)).join('') + (mine || help ? '<button class="wcard addcard" data-add>' + A.icon('plus', 30) + '<span>' + (mine ? 'Add a wish' : 'Add a wish for ' + esc(who)) + '</span></button>' : '') + '</div><div class="dots" id="dots"></div>'
           : '<div class="empty">' + A.icon('gift', 54) + '<p>' + (mine ? 'Add the first thing you are hoping for. A photo and a link make it easy to shop for you.' : help ? esc(who) + ' has no phone of their own, so add what ' + esc(who) + ' is hoping for.' : esc(who) + ' has not added anything yet.') + '</p>' + (mine || help ? '<button class="btn primary" data-add>' + A.icon('plus', 18) + (mine ? 'Add a wish' : 'Add a wish for ' + esc(who)) + '</button>' : '') + '</div>');
       $$('[data-add]', root).forEach(b => b.onclick = () => openForm(who, null));
-      const pb = $('#picksBtn', root); if (pb) pb.onclick = PICKS() ? openPicks : () => { if (A.msgs) A.msgs.compose({ who: who }); };
+      const pb = $('#picksBtn', root); if (pb) pb.onclick = openPicks;
       $('#pastBtn', root).onclick = () => openPast(who);
       if (A.about) A.about.wire(root, who);
       const reel = $('#reel', root); if (!reel) return;
@@ -167,7 +179,7 @@
         const got = e.target.closest('[data-got]');
         if (got) { const it = A.data.find(who, got.dataset.got); if (it) { it.got = it.got ? 0 : seasonYear(); const r = got.getBoundingClientRect(); if (it.got && A.fx) A.fx.confetti(r.left + r.width / 2, r.top, 30); A.data.save(); A.refresh(); } return; }
         if (ed) return openForm(who, ed.dataset.edit);
-        if (pl) return PICKS() ? openPlan(who, pl.dataset.plan) : (A.msgs && A.msgs.compose({ who: who, id: pl.dataset.plan }));
+        if (pl) return PICKS() ? openPlan(who, pl.dataset.plan) : toggleGetting(who, pl.dataset.plan, pl);
         if (card && !e.target.closest('button')) openDetail(who, card.dataset.id);
       });
     }
@@ -209,13 +221,14 @@
     const mine = who === A.me(), mp = mine ? '' : myPlan(id), pics = (it.photos || []).map(A.photos.src).filter(Boolean), b = it.backup;
     const bsrc = b && b.photo ? A.photos.src(b.photo) : '';
     const act = mine ? '<button class="btn" data-edit>' + A.icon('pencil', 18) + 'Edit</button>'
-      : (helps(who) ? '<button class="btn" data-edit>' + A.icon('pencil', 18) + 'Edit</button>' : '') + '<button class="btn' + (mp ? ' primary' : '') + '" data-plan>' + A.icon(PICKS() ? (mp ? 'check' : 'lock') : 'gift', 18) + (mp ? PLAN[mp] : PICKS() ? 'Add to my picks' : 'I am getting this') + '</button>';
+      : (helps(who) ? '<button class="btn" data-edit>' + A.icon('pencil', 18) + 'Edit</button>' : '') + '<button class="btn' + (mp ? ' primary' : '') + '" data-plan>' + A.icon(PICKS() ? (mp ? 'check' : 'lock') : (mp ? 'check' : 'gift'), 18) + (mp ? (PICKS() ? PLAN[mp] : 'You are getting this') : PICKS() ? 'Add to my picks' : 'I am getting this') + '</button>';
     return A.ui.sheet({
       title: mine ? 'Your wish' : A.poss(who) + ' wish', wide: true,
       html: '<div class="gal">' + (pics.length ? pics.map(s => '<div>' + photoBox(s) + '</div>').join('') : '<div>' + A.icon(it.icon || 'gift', 90, 'ph') + '</div>') + '</div>' +
         (pics.length > 1 ? '<p class="muted small center" style="margin-top:6px">Swipe for ' + pics.length + ' photos</p>' : '') +
         '<h3 class="d-title">' + esc(it.name) + '</h3>' + (it.price ? '<div class="d-price">' + esc(it.price) + '</div>' : '') +
         (it.top || it.santa ? '<div class="row gap-s wrap" style="margin-top:10px">' + badges(it) + '</div>' : '') +
+        (!mine && !PICKS() ? gettingNote(who, mp, takenBy(id, who)) : '') +
         (it.why && it.why.length ? '<div class="d-sec"><h3>Why ' + (mine ? 'I' : esc(who)) + ' would love it</h3><ul class="why">' + it.why.map(w => '<li>' + A.icon('check') + '<span>' + esc(w) + '</span></li>').join('') + '</ul></div>' : '') +
         (it.note ? '<div class="d-sec"><h3>Good to know</h3><p class="d-note">' + esc(it.note) + '</p></div>' : '') +
         (webOnly(it.links).length ? '<div class="d-sec"><h3>Where to get it</h3><div class="links">' + webOnly(it.links).map(u => '<a class="btn block" href="' + esc(u) + '" target="_blank" rel="noopener">' + A.icon('link', 18) + 'Open ' + esc(host(u)) + '</a>').join('') + '</div></div>' : '') +
@@ -227,7 +240,7 @@
         const e1 = $('[data-edit]', el), c1 = $('[data-plan]', el), r1 = $('[data-report]', el);
         if (r1) r1.onclick = () => { close(); A.safety.reportSheet(who, id); };
         if (e1) e1.onclick = () => { close(); openForm(who, id); };
-        if (c1) c1.onclick = () => { close(); if (PICKS()) openPlan(who, id); else if (A.msgs) A.msgs.compose({ who: who, id: id }); };
+        if (c1) c1.onclick = () => { if (PICKS()) { close(); openPlan(who, id); } else { toggleGetting(who, id); close(); openDetail(who, id); } };
       }
     });
   }

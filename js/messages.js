@@ -78,6 +78,10 @@
     .mu-pair{display:flex;gap:8px;margin-top:12px}
     .mu-small{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 10px;border-radius:14px;border:1.5px dashed var(--line2);font-weight:600;font-size:14px;color:#dbe6f4}
     .fx-pill{gap:6px}
+    .wshh{display:flex;align-items:center;gap:11px;margin:10px 0 0;padding:10px 12px;border-radius:14px;background:linear-gradient(90deg,rgba(233,196,106,.32),rgba(233,196,106,.12));border:1.5px solid var(--gold);text-align:left}
+    .wshh>svg{flex:none;color:var(--gold)}
+    .wshh b{display:block;font-size:14.5px;line-height:1.2;color:#fff}
+    .wshh small{display:block;margin-top:2px;font-size:13px;font-weight:700;color:#ffe9a8}
     button.gm-tile{text-align:left;color:inherit;font:inherit;padding:0}
     .ab-hero{display:flex;align-items:center;gap:14px;width:100%;min-height:84px;margin:0 0 14px;padding:14px 16px;border-radius:20px;text-align:left;color:#fff;background:linear-gradient(100deg,#e0344e,#8f1329);border:2px solid rgba(255,205,210,.65);box-shadow:0 8px 22px rgba(0,0,0,.35);animation:ab-glow 2.6s ease-in-out infinite}
     .ab-hero>svg{flex:none;color:#ffd6dc}
@@ -87,6 +91,10 @@
     @keyframes ab-glow{0%,100%{box-shadow:0 8px 22px rgba(0,0,0,.35),0 0 0 0 rgba(255,205,210,.5)}50%{box-shadow:0 8px 22px rgba(0,0,0,.35),0 0 0 12px rgba(255,205,210,0)}}
     @media (prefers-reduced-motion:reduce){.ab-hero{animation:none}}
   `);
+
+  /* Messages are switched off: the single "I am getting this" button took their place. The code stays here.
+     Set A.features.messages = true (in lists.js) to bring them back. */
+  if (!(A.features && A.features.messages)) return;
 
   /* ---------- write a message ---------- */
   function compose(o) {
