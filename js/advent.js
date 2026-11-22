@@ -346,7 +346,7 @@
   }
 
   /* ---------- page ---------- */
-  let timers = [], cur = null, lastNudge = 0, lastNudgeDay = 0, demoDone = false;
+  let timers = [], cur = null, lastNudge = 0, lastNudgeDay = 0, demoDone = false, dragEnd = 0;
   const later = (fn, ms) => { const t = setTimeout(fn, ms); timers.push(t); return t; };
 
   function label(day, st) {
@@ -376,10 +376,35 @@
       '</div></div></div></div>';
     paintStatus();
     $('.adv-crk', root).addEventListener('click', () => cracker(false));
+    if (!App.store.raw.get('advHint', false)) { App.store.raw.set('advHint', true); later(() => App.ui.toast('Tip: drag across doors to open or close them.'), 900); }
     $('.adv-pz', root).addEventListener('click', () => { if (App.prizes) App.prizes.shelf(); });
+    /* press and drag across the doors: the closed ones open, or the open ones close, depending on the door you started on */
+    (function () {
+      const grid = $('.adv-grid', root);
+      let st = null;
+      const cellAt = (x, y) => { const el = document.elementFromPoint(x, y); return el && el.closest ? el.closest('.adv-cell') : null; };
+      const apply = c => { if (st.seen.has(c)) return; st.seen.add(c); setDoor(c, +c.dataset.day, st.mode === 'open'); };
+      grid.addEventListener('pointerdown', e => {
+        const c = e.target.closest('.adv-cell');
+        if (!c || e.button) return;
+        st = { x: e.clientX, y: e.clientY, c: c, mode: c.classList.contains('adv-open') ? 'close' : 'open', on: false, seen: new Set() };
+      });
+      grid.addEventListener('pointermove', e => {
+        if (!st) return;
+        if (!st.on) {
+          if (Math.hypot(e.clientX - st.x, e.clientY - st.y) < 12) return;     /* a tap is not a drag */
+          st.on = true; try { grid.setPointerCapture(e.pointerId); } catch (x) {}
+          apply(st.c);
+        }
+        const c = cellAt(e.clientX, e.clientY);
+        if (c) apply(c);
+      });
+      const end = () => { if (st && st.on) dragEnd = Date.now(); st = null; };
+      grid.addEventListener('pointerup', end); grid.addEventListener('pointercancel', end);
+    })();
     $('.adv-grid', root).addEventListener('click', e => {
       const cell = e.target.closest('.adv-cell');
-      if (!cell) return;
+      if (!cell || Date.now() - dragEnd < 150) return;
       const day = +cell.dataset.day;
       if (cell.classList.contains('adv-locked')) nudge(cell, day);
       else if (cell.classList.contains('adv-opening')) return;
@@ -428,6 +453,29 @@
     const t = Date.now();
     if (day !== lastNudgeDay || t - lastNudge > 1800) { App.ui.toast('Opens December ' + day); lastNudge = t; lastNudgeDay = day; }
   }
+  function saveClosed(day) {
+    if (DEMO === 'open' || DEMO === 'openall') return;
+    const all = App.store.get('advent', {});
+    if (!all || typeof all !== 'object' || Array.isArray(all)) return;
+    const me = App.me();
+    if (Array.isArray(all[me])) { all[me] = all[me].filter(d => d !== day); App.store.set('advent', all); }
+  }
+  /* open or close one door without the pop-up (used when dragging across doors, and by "Close this door") */
+  function setDoor(cell, day, open) {
+    if (!cur || cell.classList.contains('adv-locked')) return;
+    const isOpen = cell.classList.contains('adv-open');
+    if (open === isOpen) return;
+    if (open) {
+      cur.mine.add(day); saveOpened(day);
+      cell.classList.remove('adv-ready'); cell.classList.add('adv-open', 'adv-opening');
+      later(() => cell.classList.remove('adv-opening'), App.reduced ? 80 : 1000);
+    } else {
+      cur.mine.delete(day); saveClosed(day);
+      cell.classList.remove('adv-open', 'adv-opening'); cell.classList.add('adv-ready');
+    }
+    cell.setAttribute('aria-label', label(day, open ? 'open' : 'ready'));
+    paintStatus();
+  }
   function openDoor(cell, day) {
     cur.mine.add(day);
     saveOpened(day);
@@ -446,8 +494,10 @@
         '<div class="adv-day-main"><span class="chip ' + k.chip + '">' + App.icon(k.icon, 14) + k.label + '</span>' +
         '<p class="adv-day-text">' + App.esc(joke ? d.x[0] : d.x) + '</p>' +
         (joke ? '<p class="adv-day-punch">' + App.esc(d.x[1]) + '</p>' : '') + '</div>' +
-        '<div class="pz"></div><div class="sv-host"></div><button type="button" class="btn primary block" data-close style="margin-top:14px">Close</button></div>',
-      onMount(el) {
+        '<div class="pz"></div><div class="sv-host"></div><button type="button" class="btn block" id="advShut" style="margin-top:14px">Close this door</button><button type="button" class="btn primary block" data-close>Close</button></div>',
+      onMount(el, close) {
+        const sh = el.querySelector('#advShut');
+        if (sh) sh.onclick = () => { close(); const c = document.querySelector('.adv-cell[data-day="' + day + '"]'); if (c) setDoor(c, day, false); };
         if (App.prizes) App.prizes.panel(el.querySelector('.pz'), season().year, day, d.t === 'm' ? d.x : '');
         if (App.service) App.service.panel(el.querySelector('.sv-host'), season().year, day);
         if (day !== 25 || !App.fx || !App.fx.confetti) return;

@@ -45,6 +45,31 @@
     .fm-idea{display:inline-flex;align-items:center;gap:7px;min-height:42px;padding:0 14px;border-radius:999px;font-weight:700;font-size:14px;background:var(--surface2);border:1.5px solid var(--line2);color:#fff;transition:transform .12s,border-color .12s}
     .fm-idea svg{color:var(--gold)}
     .fm-idea:active{transform:scale(.96);border-color:var(--gold)}
+    /* ---- advent doors: one cohesive look. Red and green in a checker, gold foil numbers, a thin gold frame ---- */
+    .adv-grid{touch-action:none;user-select:none;-webkit-user-select:none}
+    .adv-cell:nth-child(odd){--c1:#c52a40;--c2:#8c1329;--ink:#f7dc8a;--perf:#f5d283}
+    .adv-cell:nth-child(even){--c1:#23805f;--c2:#0f4c39;--ink:#f7dc8a;--perf:#f5d283}
+    .adv-cell.adv-d25{--c1:#f6dc86;--c2:#c8922c;--ink:#5a1a24;--perf:#7a4a10}
+    .adv-cell.adv-p1,.adv-cell.adv-p2,.adv-cell.adv-p3,.adv-cell.adv-p4,.adv-cell.adv-p0{--tone:rgba(255,255,255,.07);--tex:radial-gradient(120% 80% at 50% 0,rgba(255,255,255,.16),transparent 60%),repeating-linear-gradient(135deg,rgba(255,255,255,.05) 0 1.5px,transparent 1.5px 8px)}
+    .adv-face{box-shadow:inset 0 1.5px 0 rgba(255,255,255,.38),inset 0 -3px 0 rgba(0,0,0,.28),inset 0 0 0 1px rgba(0,0,0,.18),0 2px 3px rgba(0,0,0,.5)}
+    .adv-face::before{inset:max(3.500px,calc(var(--u)*.06));border:1px solid var(--perf);opacity:.85;box-shadow:0 0 0 max(2px,calc(var(--u)*.022)) rgba(0,0,0,.14),inset 0 0 0 max(2px,calc(var(--u)*.022)) rgba(0,0,0,.1)}
+    .adv-t1 .adv-num,.adv-t2 .adv-num{display:block;width:auto;height:auto;min-width:0;padding:0;border:0;border-radius:0;background:none;box-shadow:none;margin:0;font-size:calc(var(--u)*.5);color:inherit}
+    .adv-t1 .adv-num::before{display:none}
+    .adv-t1 .adv-motif{display:block}
+    .adv-face .adv-num{background:linear-gradient(180deg,#fffbe0 0,#f6d56e 48%,#c0891a 100%);-webkit-background-clip:text;background-clip:text;color:transparent!important;filter:drop-shadow(0 1.5px 0 rgba(0,0,0,.45));text-shadow:none!important}
+    .adv-d25 .adv-face .adv-num{background:linear-gradient(180deg,#8a2a3a,#4c1520);-webkit-background-clip:text;background-clip:text;filter:drop-shadow(0 1px 0 rgba(255,255,255,.4))}
+    .adv-motif{opacity:1;color:var(--perf)}
+    .adv-d25 .adv-motif{color:#7a4a10}
+    .adv-hinge{background:linear-gradient(180deg,#fff0b8,#d9a73e 55%,#8a6520)}
+    /* fairy lights along the top of the board */
+    .adv-board::before{content:"";position:absolute;left:12px;right:12px;top:-8px;height:16px;pointer-events:none;z-index:4;
+      background:
+        radial-gradient(circle at 5px 10px,#ff5a6c 0 3.200px,transparent 4px) 0 0/68px 16px repeat-x,
+        radial-gradient(circle at 5px 10px,#ffd166 0 3.200px,transparent 4px) 17px 0/68px 16px repeat-x,
+        radial-gradient(circle at 5px 10px,#3ee6a0 0 3.200px,transparent 4px) 34px 0/68px 16px repeat-x,
+        radial-gradient(circle at 5px 10px,#5aa2ff 0 3.200px,transparent 4px) 51px 0/68px 16px repeat-x,
+        linear-gradient(#0a1f1a,#0a1f1a) 0 4px/100% 1.500px no-repeat;
+      filter:drop-shadow(0 0 3px rgba(255,255,255,.35))}
     /* ---- the Tap Santa tile ---- */
     .gm-santa-art{width:100%;height:100%;display:block}
   `);
