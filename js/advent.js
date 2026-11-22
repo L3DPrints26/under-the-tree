@@ -357,7 +357,7 @@
     const st = mine.has(day) ? 'open' : day <= s.unlocked ? 'ready' : 'locked';
     const cls = 'adv-cell adv-c' + (last ? 4 : COLOR[i]) + ' adv-t' + (last ? 0 : FACE[i]) + ' adv-p' + (last ? 2 : TEX[i]) + ' adv-' + st + (day === s.today ? ' adv-today' : '') + (last ? ' adv-d25' : '');
     return '<button type="button" class="' + cls + '" data-day="' + day + '" aria-label="' + label(day, st) + '"><span class="adv-3d">' +
-      '<span class="adv-in"><span class="adv-in-art">' + App.icon(DAYS[day].icon) + '</span><b class="adv-in-n">' + day + '</b></span>' +
+      '<span class="adv-in"><span class="adv-in-art">' + (App.illus ? App.illus(DAYS[day].icon, 56) : App.icon(DAYS[day].icon)) + '</span><b class="adv-in-n">' + day + '</b></span>' +
       '<span class="adv-door"><span class="adv-face"><i class="adv-hinge"></i><i class="adv-hinge b"></i>' +
       '<span class="adv-num">' + day + '</span><span class="adv-motif">' + App.icon(last ? 'star' : MOTIF[i % MOTIF.length]) + '</span>' +
       '<i class="adv-knob"></i><span class="adv-lock">' + App.icon('lock') + '</span></span></span></span></button>';
@@ -442,7 +442,7 @@
     const d = DAYS[day], k = KIND[d.t], joke = d.t === 'j';
     App.ui.sheet({
       title: 'December ' + day, cls: 'adv-day-sheet',
-      html: '<div class="adv-day"><div class="adv-day-art">' + App.icon(d.icon, 52) + '</div>' +
+      html: '<div class="adv-day"><div class="adv-day-art">' + (App.illus ? App.illus(d.icon, 66) : App.icon(d.icon, 52)) + '</div>' +
         '<div class="adv-day-main"><span class="chip ' + k.chip + '">' + App.icon(k.icon, 14) + k.label + '</span>' +
         '<p class="adv-day-text">' + App.esc(joke ? d.x[0] : d.x) + '</p>' +
         (joke ? '<p class="adv-day-punch">' + App.esc(d.x[1]) + '</p>' : '') + '</div>' +
