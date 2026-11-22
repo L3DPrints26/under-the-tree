@@ -148,13 +148,14 @@
       const hatRed = '<path d="M78 46C74 31 85 20 98 21C110 22 116 30 116 41L116 47C108 44 90 43 78 46Z"/><path d="M107 24C118 25 125 35 123 46C122 50 119 52 117 50C118 42 114 34 106 31Z"/>';
       const hatBand = '<path d="M75 47C78 42.500 87 41 96 41.500C105 42 112 44 115 48C115 51.500 108 52 100 52C90 52 79 51 75 47Z"/>';
       const hatPom = '<circle cx="120.500" cy="53.500" r="5.800"/>';
-      g += '<g transform="translate(0 -9.500)"><clipPath id="sa-f-hat-c">' + hatRed + '</clipPath><clipPath id="sa-f-band-c">' + hatBand + hatPom + '</clipPath>' +
+      g += '<g transform="translate(0 -8) translate(92 46) scale(.78 .9) translate(-92 -46)"><clipPath id="sa-f-hat-c">' + hatRed + '</clipPath><clipPath id="sa-f-band-c">' + hatBand + hatPom + '</clipPath>' +
         '<g fill="' + OL + '" stroke="' + OL + '" stroke-width="1.300" stroke-linejoin="round">' + hatRed + hatBand + hatPom + '</g>' +
         '<g fill="url(#sa-red)">' + hatRed + '</g>' +
         '<g clip-path="url(#sa-f-hat-c)">' + blob(98, 42, 22, 4, '#4e0714', .7, 'b1') + blob(82, 34, 6, 12, '#4e0714', .45) + blob(94, 28, 9, 4, '#ff9aa8', .6, 'b1') + blob(113, 40, 5, 9, '#4e0714', .4, 'b1') + blob(121, 40, 4, 8, '#4e0714', .35, 'b1') + '</g>' +
         '<g fill="url(#sa-beard)">' + hatBand + '</g><g fill="#fff">' + hatPom + '</g>' +
         '<g clip-path="url(#sa-f-band-c)">' + blob(96, 52, 20, 3, '#8da4cc', .7, 'b1') + blob(123, 57, 5, 3.500, '#8da4cc', .7, 'b1') + blob(100, 43, 14, 1.600, '#fff', .9, 'b1') + blob(119, 51, 2.200, 2.200, '#fff', .9, 'b1') + '</g></g>';
       /* the near side of the sleigh goes in front, so Santa sits inside it */
+      g += blob(92, 76.500, 34, 4, '#1a0308', .55, 'b1') + blob(60, 74, 14, 5, '#1a0308', .35, 'b1');
       g += '<g transform="translate(0 6)">';
       g += form('sa-f-sleigh', '<path d="M41 70C38 83 45 97 58 102C72 107 99 107 111 99C120 93 124 83 122 74C121 71 119 70 116 70H47C44 70 42 70 41 70Z"/><path d="M42 75C33 75 29 66 33 60C36 55 43 57 43 62C43 66 45 70 49 72Z"/>', 'url(#sa-red)',
         blob(82, 107, 48, 9, '#4e0714', .6) + blob(38, 88, 9, 22, '#4e0714', .45) + blob(66, 76, 28, 4.500, '#ff9aa8', .65, 'b1') + blob(113, 84, 7, 13, '#ff8090', .4) + blob(82, 96, 36, 3, '#4e0714', .3, 'b1'));
