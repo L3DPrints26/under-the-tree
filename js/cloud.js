@@ -16,7 +16,7 @@
   /* kept on this device only */
   const NOSYNC = { me: 1, adventJokes: 1, claims: 1, dirty: 1, pup: 1, music: 1, groups: 1, group: 1, seeded: 1, hidden: 1 };
   /* saved two levels deep, so two people changing different parts at the same moment both win */
-  const DEEP = { santa: 1, games: 1, history: 1 };
+  const DEEP = { santa: 1, games: 1, history: 1, msgs: 1 };
   const LETTERS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
   A.css(`

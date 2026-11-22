@@ -28,7 +28,7 @@
   /* January still counts as the Christmas that just happened */
   const season = () => { const d = A.now(); return d.getMonth() === 0 ? d.getFullYear() - 1 : d.getFullYear(); };
   /* voting opens on Christmas Day and closes at the end of January */
-  const inWindow = () => { const n = A.now(), y = season(); return n >= new Date(y, 11, 25) && n < new Date(y + 1, 1, 1); };
+  const inWindow = () => { if (!(A.features && A.features.picks)) return false; const n = A.now(), y = season(); return n >= new Date(y, 11, 25) && n < new Date(y + 1, 1, 1); };
   const all = () => { const v = A.store.get('reveal', null); return v && typeof v === 'object' && !Array.isArray(v) ? v : {}; };
   const voteOf = n => { const v = all()[n]; return v && v.y === season() ? v.v : ''; };
   const voted = () => A.names.filter(n => voteOf(n));
@@ -116,5 +116,6 @@
   A.on('cloud', () => setTimeout(watch, 800));
   A.on('sync', keys => { if (keys.indexOf('reveal') >= 0 || keys.indexOf('thanks') >= 0) { setTimeout(watch, 200); if (keys.indexOf('reveal') >= 0 && !A.ui.sheetOpen()) A.refresh(); } });
 
-  A.reveal = { chipHTML, wire, sheet, isOpen, inWindow, voteOf };
+  const on = () => !!(A.features && A.features.picks);
+  A.reveal = { chipHTML: (...a) => on() ? chipHTML(...a) : '', wire: (...a) => { if (on()) wire(...a); }, sheet: (...a) => on() ? sheet(...a) : undefined, isOpen, inWindow, voteOf };
 })();

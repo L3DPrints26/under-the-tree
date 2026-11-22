@@ -516,6 +516,18 @@
         '</div>' +
       '</div></a>';
   }
+  /* Santa flies across the screen and you tap him. It runs on top of any page, and its scores are saved as santaBest. */
+  function santaTile() {
+    const best = A.store.get('santaBest', {}) || {}, me = A.me(), mine = +best[me] || 0;
+    const top = A.names.filter(n => (n === me || !(A.privacy && A.privacy.hidesScores(n))) && +best[n] > 0).sort((p, q) => best[q] - best[p])[0];
+    return '<button type="button" class="gm-tile" data-santa aria-label="Play Tap Santa">' +
+      '<div class="gm-art" style="background:linear-gradient(160deg,#34126b,#0b1730);display:grid;place-items:center;color:#f1d27c">' + A.icon('sleigh', 72) + '</div>' +
+      '<div class="gm-info"><div class="gm-name"><span>Tap Santa</span>' + A.icon('next', 20) + '</div>' +
+      '<p class="gm-how">Santa zooms across the screen. Tap him as many times as you can in 16 seconds.</p>' +
+      '<div class="gm-rows"><div class="gm-row">' + A.ui.avatar(me, 22) + '<span class="gm-who">Your best</span>' + (mine ? '<b>' + mine + '</b>' : '<em>None yet</em>') + '</div>' +
+      (top ? '<div class="gm-row">' + A.ui.avatar(top, 22) + '<span class="gm-who">' + (top === me ? 'You lead' : esc(top)) + A.icon('crown', 15) + '</span><b>' + best[top] + '</b></div>' : '<div class="gm-row"><span class="gm-blank">' + A.icon('crown', 13) + '</span><span class="gm-who gm-dim">No champion yet</span></div>') +
+      '</div></div></button>';
+  }
   function boardsHTML() {
     const me = A.me();
     return '<div class="gm-lb">' + GAMES.map(g => (g.boards || [null]).map(bd => {
@@ -543,7 +555,7 @@
     root.innerHTML = '<div class="gm-hub">' +
       '<div class="gm-top"><div class="gm-ttl"><h1 class="h1">Games</h1><p class="muted small">' + (A.privacy && A.privacy.hidesScores(A.me()) ? 'Your scores are hidden from everyone else.' : 'Scores save under ' + esc(A.me()) + '. Everyone can see them.') + '</p></div>' +
       '<button class="btn" data-lb>' + A.icon('trophy', 18) + '<span>Leaderboards</span></button></div>' +
-      '<div class="gm-tiles">' + GAMES.map(tileHTML).join('') + '</div></div>';
+      '<div class="gm-tiles">' + GAMES.map(tileHTML).join('') + santaTile() + '</div></div>';
     const arts = $$('[data-art]', root).map(el => ({ el, cv: $('canvas', el), g: GAMES.find(x => x.id === el.dataset.art), w: 0, h: 0 })).filter(a => a.cv && a.g.art);
     const paint = () => {
       const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -557,6 +569,7 @@
     let ro = null;
     if (window.ResizeObserver) { ro = new ResizeObserver(paint); ro.observe($('.gm-tiles', root)); }
     $('[data-lb]', root).onclick = openBoards;
+    const st = $('[data-santa]', root); if (st) st.onclick = () => { if (A.scene) A.scene.callSanta(); };
     if (DEMO === 'board') openBoards();
     return { hub: true, destroy() { if (ro) ro.disconnect(); }, resize: paint };
   }
@@ -1412,5 +1425,5 @@
     onResize() { if (active && active.resize) active.resize(); }
   };
   /* scores saved on another device: show them on the hub as they arrive */
-  if (A.on) A.on('sync', keys => { if (keys && keys.indexOf('games') >= 0 && active && active.hub && A.currentPage() === 'games' && !A.ui.sheetOpen()) A.refresh(); });
+  if (A.on) A.on('sync', keys => { if (keys && (keys.indexOf('games') >= 0 || keys.indexOf('santaBest') >= 0) && active && active.hub && A.currentPage() === 'games' && !A.ui.sheetOpen()) A.refresh(); });
 })();

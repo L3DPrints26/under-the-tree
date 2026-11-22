@@ -129,12 +129,12 @@
     const sled = ($('#santa') || {}).innerHTML || '';
     const list = [
       ['linear-gradient(160deg,#1d4fa0,#0f2150)', ball(0) + ball(1) + ball(3), 'Wishlists everyone can see', 'Each person adds what they are hoping for, with a photo, a price and a link.'],
-      ['linear-gradient(160deg,#8a6a1c,#3a2a12)', '<span class="st-tagp">' + A.icon('lock', 16) + ' Getting this</span>', 'Picks stay secret', 'Say what you are getting. The person it is for never sees it, and nobody buys it twice.'],
+      ['linear-gradient(160deg,#8a6a1c,#3a2a12)', '<span class="st-tagp">' + A.icon('lock', 16) + ' Getting this</span>', (A.features && A.features.picks ? 'Picks stay secret' : 'Tell people what you are getting'), (A.features && A.features.picks ? 'Say what you are getting. The person it is for never sees it, and nobody buys it twice.' : 'Message one person or several. The person the gift is for never sees it, and nobody buys it twice.')],
       ['linear-gradient(160deg,#c9243a,#5e0a18)', '<span class="st-hold">Hold to see<br>who you got</span>', 'Secret Santa', 'Vote for who runs it, set a price limit, draw names.'],
       ['linear-gradient(160deg,#2f9a64,#0a3a25)', door(1, '#c9243a') + door(2, '#1d3a78') + door(3, '#14573a'), 'Advent, games and music', 'A new door every day in December, four small games and Christmas songs.'],
-      ['linear-gradient(160deg,#34126b,#0b1730)', sled ? '<span class="st-sled">' + sled + '</span>' : A.icon('sleigh', 54), 'Christmas Eve and Day', 'Track Santa on the 24th. On the 25th, vote to reveal who gave what.']
+      ['linear-gradient(160deg,#34126b,#0b1730)', sled ? '<span class="st-sled">' + sled + '</span>' : A.icon('sleigh', 54), 'Christmas Eve and Day', 'Track Santa on the 24th and open every advent door.']
     ];
-    if (inApp) list.push(['linear-gradient(160deg,#3b3f52,#11131c)', A.icon('clock', 54), 'On Apple Watch too', 'Lists, picks and games on your wrist, with the countdown on your watch face.']);
+    if (inApp) list.push(['linear-gradient(160deg,#3b3f52,#11131c)', A.icon('clock', 54), 'On Apple Watch too', 'Lists and games on your wrist, with the countdown on your watch face.']);
     return list.map(c => '<div class="st-card" style="background:' + c[0] + '"><div class="art">' + c[1] + '</div><h3>' + c[2] + '</h3><p>' + c[3] + '</p></div>');
   }
   const newsHTML = () => NEWS.map(n => '<h3><small>' + n.date + '</small>' + esc(n.title) + '</h3><ul>' + n.items.map(i => '<li>' + esc(i) + '</li>').join('') + '</ul>').join('');

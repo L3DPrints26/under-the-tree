@@ -546,8 +546,17 @@ window.App = (function () {
         (App.remind && App.remind.native ? '<label class="switch"><span class="s-text"><b>Reminders</b><small data-keep>A nudge when the day\'s advent door is ready, and on Christmas Eve. Only on this device.</small></span><input type="checkbox" id="setRemind"' + (App.remind.on() ? ' checked' : '') + '></label>' : '') +
         (App.tour ? '<button class="btn sm block" id="setTour" style="margin:4px 0 6px">' + App.icon('gift', 16) + 'How it works</button>' : '') +
         (App.lock && App.lock.on() && ME ? '<button class="btn sm block" id="setPin" style="margin:4px 0 6px">' + App.icon('lock', 16) + 'Your locks</button>' : '') +
-        (bgs.length ? '<span class="label" style="margin-top:10px">Background</span><div class="bg-grid">' + bgs.map(b => '<button class="bg-opt' + (b.id === cur ? ' on' : '') + '" data-bg="' + b.id + '" style="background-image:url(' + b.thumb + ')"><span>' + App.esc(b.name) + '</span></button>').join('') + '</div>' : ''),
-      onMount(el) {
+        (bgs.length ? '<span class="label" style="margin-top:10px">Background</span><div class="bg-grid">' + bgs.map(b => '<button class="bg-opt' + (b.id === cur ? ' on' : '') + '" data-bg="' + b.id + '" style="background-image:url(' + b.thumb + ')"><span>' + App.esc(b.name) + '</span></button>').join('') + '</div>' : '') +
+        '<span class="label" style="margin-top:16px">More</span><div class="set-more">' +
+        (App.privacy && ME ? '<button class="set-row" id="stPriv">' + App.icon('eye', 20) + '<span>Who sees what</span></button>' : '') +
+        (App.cloud && App.space() ? '<button class="set-row" id="stNames">' + App.icon('tag', 20) + '<span>What I call people</span></button>' : '') +
+        (App.safety ? '<button class="set-row" id="stSafe">' + App.icon('hand', 20) + '<span>Safety and rules</span></button>' : '') +
+        '<button class="set-row" id="stAbout">' + App.icon('tree', 20) + '<span>About and what is new</span>' + (App.start && App.start.unseen() ? '<em>New</em>' : '') + '</button>' +
+        (App.tips && App.tips.available() ? '<button class="set-row" id="stTip">' + App.icon('heart', 20) + '<span>Tip the dev</span></button>' : '') + '</div>',
+      onMount(el, close) {
+        const mo = (id, fn) => { const x = $('#' + id, el); if (x) x.onclick = () => { close(); fn(); }; };
+        mo('stPriv', () => App.privacy.sheet()); mo('stSafe', () => App.safety.sheet()); mo('stAbout', () => App.go('#/start')); mo('stTip', () => App.tips.sheet());
+        mo('stNames', () => { App.cloud.peopleSheet(); ui.toast('Tap someone to pick what you call them.'); });
         const pb = $('#setPin', el); if (pb) pb.onclick = () => App.lock.optionsSheet();
         const bg = $('#setBig', el); if (bg) bg.onchange = e => App.tour.setBig(e.target.checked);
         const tr = $('#setTour', el); if (tr) tr.onclick = () => App.tour.show();
@@ -570,25 +579,12 @@ window.App = (function () {
         (inGroup ? '<div class="mu-a"><button class="mu-hero" id="mnInvite"><span class="mu-hero-t"><b>Invite people</b><small>Send a link or the code</small></span><span class="mu-code">' + C.pretty(App.space()) + '</span></button>' +
           '<div class="mu-two"><button class="mu-sq blue" id="mnPeople">' + App.icon('users', 24) + '<b>People</b><small>' + App.names.length + ' here' + (on ? ', ' + on + ' online' : '') + '</small></button>' +
           '<button class="mu-sq purple" id="mnGroups">' + App.icon('swap', 24) + '<b>My groups</b><small>Switch or leave</small></button></div></div>' : '') +
-        '<div class="mu-b">' +
-        /* the front page: what the app is and what changed */
-        '<button class="mu-about" id="mnAbout">' + App.icon('tree', 20) + '<span><b>About and what is new</b><small>' + (App.start && App.start.news[0] ? App.esc(App.start.news[0].title) : 'What the app does') + '</small></span>' + (App.start && App.start.unseen() ? '<em>New</em>' : '') + '</button>' +
-        (App.tips && App.tips.available() ? '<button class="mu-about mu-tip" id="mnTip">' + App.icon('heart', 20) + '<span><b>Tip the dev</b><small>Optional. It unlocks nothing.</small></span></button>' : '') +
-        /* starting or joining: pill buttons and one dashed bar */
-        (C ? '<p class="mu-h">Start something new</p><div class="mu-pills"><button class="mu-pill green" id="mnFamily">' + App.icon('tree', 18) + 'Family</button><button class="mu-pill red" id="mnFriends">' + App.icon('heart', 18) + 'Friends</button><button class="mu-pill line" id="mnMore">More</button></div>' +
-          '<button class="mu-join" id="mnJoin">' + App.icon('plus', 18) + 'Join a group with a code</button>' : '') +
-        /* things about this phone: round buttons */
-        '<p class="mu-h">On this ' + App.dev + '</p><div class="mu-round">' +
-        '<button class="mu-dot" id="mnBg"><span class="mu-c mu-photo"' + (bg ? ' style="background-image:url(' + bg.thumb + ')"' : '') + '></span><small>Background</small></button>' +
-        (C && App.space() ? '<button class="mu-dot" id="mnNames"><span class="mu-c">' + App.icon('tag', 22) + '</span><small>What I call people</small></button>' : '') +
-        (lockOn ? '<button class="mu-dot" id="mnPin"><span class="mu-c">' + App.icon('lock', 22) + '</span><small>Locks</small></button>' : '') +
-        (App.privacy && ME ? '<button class="mu-dot" id="mnPriv"><span class="mu-c">' + App.icon('eye', 22) + '</span><small>Who sees what</small></button>' : '') +
-        (App.safety ? '<button class="mu-dot" id="mnSafe"><span class="mu-c">' + App.icon('hand', 22) + '</span><small>Safety and rules</small></button>' : '') +
-        '</div></div></div>',
+        (C ? '<div class="mu-pair"><button class="mu-small" id="mnNew">' + App.icon('plus', 18) + 'Start a group</button><button class="mu-small" id="mnJoin">' + App.icon('link', 18) + 'Join with a code</button></div>' : '') +
+        '</div>',
       onMount(el, close) {
         const tap = (id, fn) => { const x = $('#' + id, el); if (x) x.onclick = fn; };
         tap('mnInvite', () => C.invite()); tap('mnPeople', () => { close(); C.peopleSheet(); }); tap('mnGroups', () => { close(); C.groupSheet(); });
-        tap('mnFamily', () => { close(); App.go('#/start/family'); }); tap('mnFriends', () => { close(); App.go('#/start/friends'); }); tap('mnJoin', () => { close(); App.go('#/start/join'); }); tap('mnMore', () => { close(); App.go('#/start/new'); });
+        tap('mnNew', () => { close(); App.go('#/start/new'); }); tap('mnJoin', () => { close(); App.go('#/start/join'); });
         tap('mnAbout', () => { close(); App.go('#/start'); });
         tap('mnTip', () => { close(); App.tips.sheet(); });
         tap('mnBg', () => { close(); ui.settings(); }); tap('mnPin', () => { close(); App.lock.optionsSheet(); }); tap('mnPriv', () => { close(); App.privacy.sheet(); }); tap('mnSafe', () => { close(); App.safety.sheet(); });
@@ -617,7 +613,9 @@ window.App = (function () {
       html: mine
         ? '<div class="me-pic" id="picRow">' + picRow() + '</div><input type="file" accept="image/*" id="picFile" hidden>' +
           '<button class="who-orn" id="whoOrn"><span class="who-orn-b"></span><span><b>Design my ornament</b><small>Styles, a photo, or draw your own</small></span></button>' +
-          '<div class="row gap who-row">' + (App.cloud ? '<button class="btn grow" id="whoGroups">' + App.icon('users', 18) + (App.space() ? 'Group' : 'Go online') + '</button>' : '') +
+          (App.about ? '<button class="who-quiz" id="whoQuiz">' + App.icon('heart', 24) + '<span><b>Favorites quiz</b><small>' + (App.about.count(ME) ? App.about.count(ME) + ' of ' + App.about.questions.length + ' answered' : 'Helps people shop for you') + '</small></span><i>' + (App.about.count(ME) >= App.about.questions.length ? 'Edit' : App.about.count(ME) ? 'Continue' : 'Start') + '</i></button>' : '') +
+          (App.msgs && App.space() && App.names.length > 1 ? '<button class="who-quiz who-msg" id="whoMsg">' + App.icon(App.icons && App.icons.advChat ? 'advChat' : 'list', 24) + '<span><b>Messages</b><small>' + App.esc(App.msgs.menuLine()) + '</small></span>' + (App.msgs.unread() ? '<i>' + App.msgs.unread() + '</i>' : '') + '</button>' : '') +
+          '<div class="row gap who-row">' + (App.cloud && !App.space() ? '<button class="btn grow" id="whoGroups">' + App.icon('users', 18) + 'Go online</button>' : '') +
           '<button class="btn grow" id="whoSet">' + App.icon('sliders', 18) + 'Settings</button></div>' +
           '<button class="btn ghost block who-switch" id="whoSwitch">Switch person</button>'
         : '<p class="muted">' + (!App.names.length ? 'Nobody is in this group yet. Add your name to start.' : locks ? 'Pick your name. A name marked Taken is already on another device. Tap it to see how to get it here.' : 'Pick your name. You can change your own list and see everyone else\'s.') + '</p>' +
@@ -635,6 +633,8 @@ window.App = (function () {
         const grp = $('#whoGroups', el); if (grp) grp.onclick = () => { close(); App.cloud.groupSheet(); };
         const set = $('#whoSet', el); if (set) set.onclick = () => { close(); ui.settings(); };
         const sw = $('#whoSwitch', el); if (sw) sw.onclick = () => { close(); ui.who('switch'); };
+        const qz = $('#whoQuiz', el); if (qz) qz.onclick = () => { close(); App.about.open(ME); };
+        const mg = $('#whoMsg', el); if (mg) mg.onclick = () => { close(); App.msgs.inbox(); };
         const ob = $('#whoOrn', el); if (ob) ob.onclick = () => { close(); if (ui.ornament) ui.ornament(); };
         if (!mine) return;
         const row = $('#picRow', el), file = $('#picFile', el);
@@ -658,7 +658,7 @@ window.App = (function () {
   ];
   App.renderShell = () => {
     $('#tabs').innerHTML = TABS.map(t => '<a class="tab" data-tab="' + t.id + '" href="' + t.hash + '">' + App.icon(t.icon) + '<span>' + (t.short || t.label) + '</span></a>').join('');
-    $('#meBtn').innerHTML = ME ? ui.avatar(ME, 30) + '<span>' + ME + '</span>' : '';
+    $('#meBtn').innerHTML = ME ? ui.avatar(ME, 30) + '<span>' + ME + '</span>' + (App.msgs && App.msgs.unread() ? '<i class="me-badge">' + App.msgs.unread() + '</i>' : '') : '';
   };
   let current = null, curName = '';
   App.parse = () => { const p = decodeURIComponent(location.hash.replace(/^#\/?/, '')).split('/').filter(Boolean); return { name: p[0] || 'home', args: p.slice(1) }; };

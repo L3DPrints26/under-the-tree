@@ -54,7 +54,7 @@
       const pat = land ? [.05, .105, .03, .12, .06, .09, .04] : [.02, .045, .012, .04, .016, .034];
       const lens = A.names.map((n, i) => pat[i % pat.length] * Math.min(1, (land ? 1 : 2) / R));
       root.innerHTML = `
-        <div class="home-fx"><button class="icon-btn solid" id="fxSanta" aria-label="Call Santa">${A.icon('sleigh', 20)}</button><button class="icon-btn solid" id="fxSnow" aria-label="Let it snow">${A.icon('snow', 20)}</button></div>
+        <div class="home-fx"><button class="btn sm fx-pill" id="fxSnow" aria-label="Start a blizzard">${A.icon('snow', 18)}<span>Blizzard</span></button></div>
         <div class="count${xmasDay ? ' merry' : ''}">${xmasDay
           ? '<span class="count-num">Merry Christmas</span><span class="count-unit">Go open something.</span>'
           : '<span class="count-num">0</span><span class="count-unit">days until Christmas</span><span class="count-sub"><span><b>00</b> hr</span><span><b>00</b> min</span><span><b>00</b> sec</span></span>'}${A.tracker ? A.tracker.chipHTML() : ''}${A.reveal ? A.reveal.chipHTML() : ''}</div>
@@ -64,7 +64,6 @@
       if (A.reveal) A.reveal.wire(root);
       if (A.tracker) A.tracker.wire(root);
       const sup = $('#hmSup', root); if (sup) sup.onclick = () => A.share.support();
-      $('#fxSanta', root).onclick = () => { if (A.scene) A.scene.callSanta(); };
       $('#fxSnow', root).onclick = () => { if (A.scene) A.scene.blizzard(); A.ui.toast('Blizzard for ten seconds.'); };
     },
     leave() { clearInterval(timer); }

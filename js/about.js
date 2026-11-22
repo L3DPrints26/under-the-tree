@@ -68,12 +68,14 @@
   /* the strip that sits above a wishlist: a taste of the answers, tap for all of them */
   function stripHTML(who) {
     const mine = who === A.me(), a = of(who), n = count(who);
+    if (mine && n < QUESTIONS.length) return '<button class="ab-hero" id="abStrip">' + A.icon('heart', 34) + '<span><b>' + (n ? 'Finish your favorites quiz' : 'Take your favorites quiz') + '</b><small>' + (n ? n + ' of ' + QUESTIONS.length + ' answered' : 'About two minutes. It tells everyone what to get you.') + '</small></span><i>' + (n ? 'Continue' : 'Start') + '</i></button>';
     if (mine) return '<button class="ab-strip" id="abStrip">' + A.icon('heart', 18) + '<span>' + (n ? 'My favorites quiz' : 'Take the favorites quiz so people know what you like') + '</span><i>' + (n ? n + ' of ' + QUESTIONS.length : 'Start') + '</i></button>';
     if (!n) return '';
     const taste = QUESTIONS.filter(q => a[q.id]).slice(0, 3).map(q => esc(a[q.id])).join(', ');
     return '<button class="ab-strip" id="abStrip">' + A.icon('heart', 18) + '<span><b>' + esc(who) + ' likes</b> ' + taste + '</span><i>See all</i></button>';
   }
-  function wire(root, who) { const b = $('#abStrip', root); if (b) b.onclick = () => (who === A.me() && !count(who) ? quiz(0) : card(who)); }
+  function open(who) { if (who === A.me() && count(who) < QUESTIONS.length) quiz(Math.max(0, QUESTIONS.findIndex(q => !of(who)[q.id]))); else card(who); }
+  function wire(root, who) { const b = $('#abStrip', root); if (b) b.onclick = () => open(who); }
 
   /* everything one person answered, as gift tags */
   function card(who) {
@@ -130,5 +132,5 @@
     });
   }
 
-  A.about = { stripHTML, wire, card, quiz, count, questions: QUESTIONS };
+  A.about = { stripHTML, wire, card, quiz, count, open, questions: QUESTIONS };
 })();

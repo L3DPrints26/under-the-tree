@@ -3,6 +3,10 @@
   'use strict';
   const A = window.App, $ = A.$, $$ = A.$$, esc = A.esc;
   let lists = {}, plans = {}, share = {};
+  /* My picks is switched off. Everything for it is still here: set picks to true to bring it back (also the watch: Cloud.picksOn). */
+  A.features = A.features || {};
+  if (A.features.picks === undefined) A.features.picks = false;
+  const PICKS = () => !!A.features.picks;
 
   /* ---------- data ---------- */
   const blank = () => ({ id: A.uid(), name: '', price: '', photos: [], links: [], why: [], note: '', icon: 'gift', top: false, santa: false, backup: null });
@@ -84,9 +88,9 @@
   /* picks are private: only the person who made them sees them, plus anyone they chose to share with.
      The person a gift is for never sees picks on their own list. */
   const PLAN = { getting: 'Getting this', bought: 'Already got it' };
-  const myPlan = id => (plans[A.me()] || {})[id] || '';
+  const myPlan = id => !PICKS() ? '' : (plans[A.me()] || {})[id] || '';
   const setPlan = (id, v) => { const p = plans[A.me()] || (plans[A.me()] = {}); if (v) p[id] = v; else p[id] = undefined; };
-  const sharedPlans = (id, owner) => A.names.filter(g => g !== A.me() && g !== owner && (share[g] || []).indexOf(A.me()) >= 0 && plans[g] && plans[g][id]).map(g => ({ who: g, st: plans[g][id] }));
+  const sharedPlans = (id, owner) => !PICKS() ? [] : A.names.filter(g => g !== A.me() && g !== owner && (share[g] || []).indexOf(A.me()) >= 0 && plans[g] && plans[g][id]).map(g => ({ who: g, st: plans[g][id] }));
   A.css(`
     .pl-opt{display:flex;align-items:center;gap:12px;width:100%;min-height:58px;padding:10px 14px;border-radius:14px;background:var(--surface2);border:1px solid var(--line);margin-bottom:8px;text-align:left}
     .pl-opt>span{flex:1;min-width:0}.pl-opt b{display:block;font-weight:600}.pl-opt small{color:var(--muted);font-size:12.5px}
@@ -115,7 +119,7 @@
   function cardHTML(who, it, mine) {
     const p = A.person(who), src = firstPhoto(it), n = (it.photos || []).length, mp = mine ? '' : myPlan(it.id), others = mine ? [] : sharedPlans(it.id, who);
     const act = mine ? '<button class="btn sm" data-edit="' + it.id + '">' + A.icon('pencil', 16) + 'Edit</button><button class="btn sm' + (it.got ? ' green' : '') + '" data-got="' + it.id + '">' + A.icon('check', 16) + (it.got ? 'Got it' : 'I got this') + '</button>'
-      : (helps(who) ? '<button class="btn sm" data-edit="' + it.id + '">' + A.icon('pencil', 16) + 'Edit</button>' : '') + '<button class="btn sm' + (mp ? ' primary' : '') + '" data-plan="' + it.id + '">' + A.icon(mp ? 'check' : 'lock', 16) + (mp ? PLAN[mp] : (helps(who) ? 'My pick' : 'Add to my picks')) + '</button>';
+      : (helps(who) ? '<button class="btn sm" data-edit="' + it.id + '">' + A.icon('pencil', 16) + 'Edit</button>' : '') + '<button class="btn sm' + (mp ? ' primary' : '') + '" data-plan="' + it.id + '">' + A.icon(PICKS() ? (mp ? 'check' : 'lock') : 'gift', 16) + (mp ? PLAN[mp] : !PICKS() ? 'I am getting this' : (helps(who) ? 'My pick' : 'Add to my picks')) + '</button>';
     return '<article class="wcard' + (it.top ? ' is-top' : '') + (it.got ? ' is-got' : '') + '" data-id="' + it.id + '" style="--c2:' + p.c[1] + ';--c3:' + p.c[2] + '">' +
       '<div class="wpic">' + (src ? photoBox(src) : A.icon(it.icon || 'gift', 64, 'ph')) +
       '<div class="wbadges">' + (it.got ? '<span class="chip green">' + A.icon('check') + (mine ? 'You got it' : esc(who) + ' got this') + '</span>' : badges(it)) + '</div>' + (n > 1 ? '<span class="wcount">' + A.icon('photo', 14) + n + '</span>' : '') + '</div>' +
@@ -143,14 +147,14 @@
       root.innerHTML = '<div class="phead"><a class="icon-btn solid" href="#/" aria-label="Back">' + A.icon('back') + '</a>' + A.ui.avatar(who, 40) +
         '<div class="ttl"><h1 class="h1">' + (mine ? 'Your list' : esc(A.poss(who)) + ' list') + '</h1><p>' + sub + '</p></div>' +
         '<button class="icon-btn solid" id="pastBtn" aria-label="Past gifts">' + A.icon('clock', 20) + '</button>' +
-        (mine ? '<button class="btn primary sm" data-add>' + A.icon('plus', 18) + 'Add</button>' : '<button class="btn sm" id="picksBtn">' + A.icon('lock', 16) + 'My picks</button>') + '</div>' +
+        (mine ? '<button class="btn primary sm" data-add>' + A.icon('plus', 18) + 'Add</button>' : '<button class="btn sm" id="picksBtn">' + (PICKS() ? A.icon('lock', 16) + 'My picks' : A.icon('gift', 16) + 'Tell people') + '</button>') + '</div>' +
         (A.about ? A.about.stripHTML(who) : '') +
         (help && items.length ? '<button class="np-strip" data-add>' + A.icon('plus', 18) + '<span><b>Add a wish for ' + esc(who) + '</b><small>No phone, so anyone in the group can add for ' + esc(who) + '.</small></span></button>' : '') +
         (items.length
           ? '<div class="reel" id="reel">' + items.map(it => cardHTML(who, it, mine)).join('') + (mine || help ? '<button class="wcard addcard" data-add>' + A.icon('plus', 30) + '<span>' + (mine ? 'Add a wish' : 'Add a wish for ' + esc(who)) + '</span></button>' : '') + '</div><div class="dots" id="dots"></div>'
           : '<div class="empty">' + A.icon('gift', 54) + '<p>' + (mine ? 'Add the first thing you are hoping for. A photo and a link make it easy to shop for you.' : help ? esc(who) + ' has no phone of their own, so add what ' + esc(who) + ' is hoping for.' : esc(who) + ' has not added anything yet.') + '</p>' + (mine || help ? '<button class="btn primary" data-add>' + A.icon('plus', 18) + (mine ? 'Add a wish' : 'Add a wish for ' + esc(who)) + '</button>' : '') + '</div>');
       $$('[data-add]', root).forEach(b => b.onclick = () => openForm(who, null));
-      const pb = $('#picksBtn', root); if (pb) pb.onclick = openPicks;
+      const pb = $('#picksBtn', root); if (pb) pb.onclick = PICKS() ? openPicks : () => { if (A.msgs) A.msgs.compose({ who: who }); };
       $('#pastBtn', root).onclick = () => openPast(who);
       if (A.about) A.about.wire(root, who);
       const reel = $('#reel', root); if (!reel) return;
@@ -163,7 +167,7 @@
         const got = e.target.closest('[data-got]');
         if (got) { const it = A.data.find(who, got.dataset.got); if (it) { it.got = it.got ? 0 : seasonYear(); const r = got.getBoundingClientRect(); if (it.got && A.fx) A.fx.confetti(r.left + r.width / 2, r.top, 30); A.data.save(); A.refresh(); } return; }
         if (ed) return openForm(who, ed.dataset.edit);
-        if (pl) return openPlan(who, pl.dataset.plan);
+        if (pl) return PICKS() ? openPlan(who, pl.dataset.plan) : (A.msgs && A.msgs.compose({ who: who, id: pl.dataset.plan }));
         if (card && !e.target.closest('button')) openDetail(who, card.dataset.id);
       });
     }
@@ -205,7 +209,7 @@
     const mine = who === A.me(), mp = mine ? '' : myPlan(id), pics = (it.photos || []).map(A.photos.src).filter(Boolean), b = it.backup;
     const bsrc = b && b.photo ? A.photos.src(b.photo) : '';
     const act = mine ? '<button class="btn" data-edit>' + A.icon('pencil', 18) + 'Edit</button>'
-      : (helps(who) ? '<button class="btn" data-edit>' + A.icon('pencil', 18) + 'Edit</button>' : '') + '<button class="btn' + (mp ? ' primary' : '') + '" data-plan>' + A.icon(mp ? 'check' : 'lock', 18) + (mp ? PLAN[mp] : 'Add to my picks') + '</button>';
+      : (helps(who) ? '<button class="btn" data-edit>' + A.icon('pencil', 18) + 'Edit</button>' : '') + '<button class="btn' + (mp ? ' primary' : '') + '" data-plan>' + A.icon(PICKS() ? (mp ? 'check' : 'lock') : 'gift', 18) + (mp ? PLAN[mp] : PICKS() ? 'Add to my picks' : 'I am getting this') + '</button>';
     return A.ui.sheet({
       title: mine ? 'Your wish' : A.poss(who) + ' wish', wide: true,
       html: '<div class="gal">' + (pics.length ? pics.map(s => '<div>' + photoBox(s) + '</div>').join('') : '<div>' + A.icon(it.icon || 'gift', 90, 'ph') + '</div>') + '</div>' +
@@ -223,7 +227,7 @@
         const e1 = $('[data-edit]', el), c1 = $('[data-plan]', el), r1 = $('[data-report]', el);
         if (r1) r1.onclick = () => { close(); A.safety.reportSheet(who, id); };
         if (e1) e1.onclick = () => { close(); openForm(who, id); };
-        if (c1) c1.onclick = () => { close(); openPlan(who, id); };
+        if (c1) c1.onclick = () => { close(); if (PICKS()) openPlan(who, id); else if (A.msgs) A.msgs.compose({ who: who, id: id }); };
       }
     });
   }
