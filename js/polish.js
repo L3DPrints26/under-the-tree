@@ -32,6 +32,20 @@
     .iconpick{display:flex;gap:8px;overflow-x:auto;padding:2px 0 6px;scrollbar-width:none}
     .iconpick::-webkit-scrollbar{display:none}
     .iconpick button{flex:none;width:52px;height:52px;border-radius:14px;display:grid;place-items:center}
+    /* ---- the favorites form: a sheet of paper ---- */
+    .ab-paper{position:relative;margin:12px 0 4px;padding:24px 16px 12px;border-radius:6px;color:#3a2a1a;background:#fbf4e2 repeating-linear-gradient(transparent 0 31px,rgba(150,115,60,.13) 31px 32px);box-shadow:0 10px 26px rgba(0,0,0,.45),inset 0 0 0 1px rgba(120,90,40,.3),inset 0 0 44px rgba(190,150,80,.2)}
+    .ab-paper::before{content:"";position:absolute;left:50%;top:-10px;width:88px;height:22px;transform:translateX(-50%) rotate(-2deg);background:rgba(240,215,150,.8);box-shadow:0 1px 3px rgba(0,0,0,.25)}
+    .ab-note{margin:0 0 4px;font-size:13px;line-height:1.35;color:#7a6440}
+    .ab-sh{margin:16px 0 2px;font-family:var(--display);font-size:21px;font-weight:600;color:#9d1e2f;border-bottom:2px solid rgba(157,30,47,.35)}
+    .ab-row{display:flex;align-items:baseline;gap:10px;padding:5px 0}
+    .ab-l{flex:0 0 40%;font-weight:600;font-size:14px;line-height:1.25;color:#3a2a1a}
+    .ab-i{flex:1;min-width:0;border:0;border-bottom:1.5px dotted #a68a52;border-radius:0;background:transparent;padding:4px 2px;font-family:var(--script,cursive);font-style:italic;font-size:19px;color:#1d3a8a;outline:none}
+    .ab-i::placeholder{color:#c4b48a;font-size:13.5px;font-style:normal;font-family:inherit}
+    .ab-i:focus{border-bottom-style:solid;border-bottom-color:#9d1e2f}
+    .ab-pk{display:flex;flex-wrap:wrap;gap:6px;padding:0 0 6px 40%}
+    .ab-paper .ab-pick{min-height:30px;padding:0 11px;border-radius:999px;background:#efe2c0;border:1px solid #c9b27c;color:#5a4526;font-weight:600;font-size:13px}
+    .ab-paper .ab-pick.on{background:#9d1e2f;border-color:#9d1e2f;color:#fff}
+    .ab-saved{margin:10px 0 4px;text-align:center;font-size:12.5px;font-weight:700;color:#6fe3a5;min-height:16px}
     /* ---- hold and drag a wish ---- */
     .wcard[data-id]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
     .wcard[data-id] img{-webkit-user-drag:none}

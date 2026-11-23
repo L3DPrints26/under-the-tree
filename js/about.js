@@ -73,7 +73,7 @@
   /* the strip that sits above a wishlist: a taste of the answers, tap for all of them */
   function stripHTML(who) {
     const mine = who === A.me(), a = of(who), n = count(who);
-    if (mine && n < QUESTIONS.length) return '<button class="ab-hero" id="abStrip">' + A.icon('heart', 34) + '<span><b>' + (n ? 'Finish your favorites quiz' : 'Take your favorites quiz') + '</b><small>' + (n ? n + ' of ' + QUESTIONS.length + ' answered' : 'About two minutes. It tells everyone what to get you.') + '</small></span><i>' + (n ? 'Continue' : 'Start') + '</i></button>';
+    if (mine && n < QUESTIONS.length) return '<button class="ab-hero" id="abStrip">' + A.icon('heart', 34) + '<span><b>' + (n ? 'Finish your favorites quiz' : 'Take your favorites quiz') + '</b><small>' + (n ? n + ' of ' + QUESTIONS.length + ' answered' : 'Fill in what you like and skip the rest. It saves as you go.') + '</small></span><i>' + (n ? 'Continue' : 'Start') + '</i></button>';
     if (mine) return '<button class="ab-strip" id="abStrip">' + A.icon('heart', 18) + '<span>' + (n ? 'My favorites quiz' : 'Take the favorites quiz so people know what you like') + '</span><i>' + (n ? n + ' of ' + QUESTIONS.length : 'Start') + '</i></button>';
     if (helps(who) && n < QUESTIONS.length) return '<button class="ab-hero" id="abStrip">' + A.icon('heart', 34) + '<span><b>' + (n ? 'Finish ' : 'Fill out ') + esc(A.poss(who)) + ' favorites quiz</b><small>' + esc(who) + ' has no phone, so you can answer for them' + (n ? '. ' + n + ' of ' + QUESTIONS.length + ' done.' : '.') + '</small></span><i>' + (n ? 'Continue' : 'Start') + '</i></button>';
     if (!n) return '';
@@ -101,41 +101,41 @@
     });
   }
 
-  /* the quiz: one question at a time, each answer saved as you go */
+  /* the favorites form: every question on one sheet of paper. Nothing is required (one answer is fine), and each answer saves as it is typed. */
   function quiz(start, who) {
     const me = A.me(); if (!me) return;
     who = who || me;
-    let i = Math.max(0, Math.min(QUESTIONS.length, start || 0));
+    const own = who === me;
+    let timer = 0, flush = () => {};
+    const rows = SECTIONS.map(sec => '<h3 class="ab-sh">' + sec + '</h3>' + QUESTIONS.filter(q => q.sec === sec).map(q => {
+      const cur = of(who)[q.id] || '';
+      return '<div class="ab-row"><label class="ab-l" for="abq-' + q.id + '">' + esc(qText(q, who)) + '</label><input class="ab-i" id="abq-' + q.id + '" data-q="' + q.id + '" maxlength="80" autocomplete="off" placeholder="' + esc(q.hint || '') + '" value="' + esc(cur) + '"></div>' +
+        (q.pick.length ? '<div class="ab-pk" data-for="' + q.id + '">' + q.pick.map(p => '<button type="button" class="ab-pick' + (p === cur ? ' on' : '') + '" data-pick="' + esc(p) + '">' + esc(p) + '</button>').join('') + '</div>' : '');
+    }).join('')).join('');
     A.ui.sheet({
-      title: 'Favorites quiz' + (who !== me ? ' for ' + who : ''),
-      html: '<div id="abBody"></div>',
+      title: own ? 'My favorites' : 'Favorites for ' + who, wide: true,
+      html: '<div class="ab-paper"><p class="ab-note">' + (own ? 'Fill in whatever you like and skip the rest. It saves as you type.' : 'Fill in what you know about ' + esc(who) + ' and skip the rest. It saves as you type.') + '</p>' + rows + '</div>' +
+        '<p class="ab-saved" id="abSaved" aria-live="polite">&nbsp;</p><div class="lk-stack"><button class="btn primary block" id="abDone">Done</button></div>',
       onMount(el, close) {
-        const body = $('#abBody', el);
-        const keep = () => { const inp = $('#abIn', body); if (inp && QUESTIONS[i]) save(who, QUESTIONS[i].id, inp.value); };
-        const draw = () => {
-          if (i >= QUESTIONS.length) {
-            body.innerHTML = '<div class="ab-bar"><i style="width:100%"></i></div><div class="ab-done">' + A.icon('gift', 44) + '<b>All done</b><p class="muted">Everyone in the group can see what ' + (who === me ? 'you like' : esc(who) + ' likes') + ' now. You can change an answer any time.</p></div>' +
-              '<div class="lk-stack"><button class="btn primary block" id="abSee">' + (who === me ? 'See my answers' : 'See the answers') + '</button></div>';
-            $('#abSee', body).onclick = () => { close(); A.refresh(); card(who); };
-            return;
-          }
-          const q = QUESTIONS[i], cur = of(who)[q.id] || '';
-          body.innerHTML = '<div class="ab-bar"><i style="width:' + Math.round(i / QUESTIONS.length * 100) + '%"></i></div>' +
-            '<p class="ab-step">' + q.sec + ', question ' + (i + 1) + ' of ' + QUESTIONS.length + '</p><p class="ab-q">' + esc(qText(q, who)) + '</p>' +
-            (q.pick.length ? '<div class="ab-picks">' + q.pick.map(p => '<button type="button" class="ab-pick' + (p === cur ? ' on' : '') + '" data-pick="' + esc(p) + '">' + esc(p) + '</button>').join('') + '</div>' : '') +
-            '<label class="field" style="margin-top:10px"><span>' + (q.pick.length ? 'Or type your own' : (q.hint ? esc(q.hint) : 'Type your answer')) + '</span><input class="input" id="abIn" maxlength="80" autocomplete="off" value="' + esc(cur) + '"></label>' +
-            '<div class="ab-nav">' + (i ? '<button class="btn" id="abBack">Back</button>' : '') + '<button class="btn ghost" id="abSkip">Skip</button><button class="btn primary" id="abNext">' + (i === QUESTIONS.length - 1 ? 'Finish' : 'Next') + '</button></div>';
-          const inp = $('#abIn', body);
-          $$('[data-pick]', body).forEach(b => b.onclick = () => { inp.value = b.dataset.pick; $$('[data-pick]', body).forEach(x => x.classList.toggle('on', x === b)); });
-          inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); $('#abNext', body).click(); } };
-          $('#abNext', body).onclick = () => { keep(); i++; draw(); };
-          $('#abSkip', body).onclick = () => { i++; draw(); };
-          const bk = $('#abBack', body); if (bk) bk.onclick = () => { keep(); i--; draw(); };
-          if (A.canHover) setTimeout(() => inp.focus(), 60);
-        };
-        draw();
+        const saved = $('#abSaved', el), inputs = $$('.ab-i', el);
+        flush = () => { clearTimeout(timer); inputs.forEach(i => { if ((of(who)[i.dataset.q] || '') !== i.value.trim().slice(0, 80)) save(who, i.dataset.q, i.value); }); };
+        const mark = () => { saved.textContent = 'Saved'; };
+        inputs.forEach(i => {
+          i.addEventListener('input', () => { saved.innerHTML = '&nbsp;'; clearTimeout(timer); timer = setTimeout(() => { flush(); mark(); }, 450); });
+          i.addEventListener('blur', () => flush());
+          i.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); const n = inputs[inputs.indexOf(i) + 1]; if (n) n.focus(); else i.blur(); } });
+        });
+        $$('.ab-pk', el).forEach(g => g.addEventListener('click', e => {
+          const btn = e.target.closest('[data-pick]'); if (!btn) return;
+          $('#abq-' + g.dataset.for, el).value = btn.dataset.pick;
+          $$('[data-pick]', g).forEach(x => x.classList.toggle('on', x === btn));
+          flush(); mark();
+        }));
+        $('#abDone', el).onclick = () => { flush(); close(); };
+        const first = inputs.find(i => !i.value.trim());
+        if (first && A.canHover) setTimeout(() => first.focus(), 80);
       },
-      onClose() { A.refresh(); }
+      onClose() { flush(); A.refresh(); }
     });
   }
 
