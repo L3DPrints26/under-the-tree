@@ -56,6 +56,11 @@
   `);
 
   const all = () => { const v = A.store.get('about', null); return v && typeof v === 'object' && !Array.isArray(v) ? v : {}; };
+  /* a person with no phone: anyone can answer for them, until they pick their name on a device of their own (the same rule as their wishes) */
+  const helps = who => who !== A.me() && !!(A.noPhone && A.noPhone(who)) && !(A.lock && A.lock.has(who));
+  /* the questions are worded for the person answering; for someone else they are worded about that person */
+  const THIRD = { hobby: 'What {n} likes to do', music: 'Music {n} likes', collect: 'Things {n} collects', plenty: '{n} already has plenty of', no: 'Please do not get {n}', small: 'A small thing that always makes {n} happy' };
+  const qText = (q, who) => (who === A.me() || !THIRD[q.id] ? q.q : THIRD[q.id].replace('{n}', who));
   const of = n => { const v = all()[n]; return v && typeof v === 'object' ? v : {}; };
   const count = n => { const a = of(n); return QUESTIONS.filter(q => a[q.id]).length; };
   function save(n, id, text) {
@@ -70,51 +75,53 @@
     const mine = who === A.me(), a = of(who), n = count(who);
     if (mine && n < QUESTIONS.length) return '<button class="ab-hero" id="abStrip">' + A.icon('heart', 34) + '<span><b>' + (n ? 'Finish your favorites quiz' : 'Take your favorites quiz') + '</b><small>' + (n ? n + ' of ' + QUESTIONS.length + ' answered' : 'About two minutes. It tells everyone what to get you.') + '</small></span><i>' + (n ? 'Continue' : 'Start') + '</i></button>';
     if (mine) return '<button class="ab-strip" id="abStrip">' + A.icon('heart', 18) + '<span>' + (n ? 'My favorites quiz' : 'Take the favorites quiz so people know what you like') + '</span><i>' + (n ? n + ' of ' + QUESTIONS.length : 'Start') + '</i></button>';
+    if (helps(who) && n < QUESTIONS.length) return '<button class="ab-hero" id="abStrip">' + A.icon('heart', 34) + '<span><b>' + (n ? 'Finish ' : 'Fill out ') + esc(A.poss(who)) + ' favorites quiz</b><small>' + esc(who) + ' has no phone, so you can answer for them' + (n ? '. ' + n + ' of ' + QUESTIONS.length + ' done.' : '.') + '</small></span><i>' + (n ? 'Continue' : 'Start') + '</i></button>';
     if (!n) return '';
     const taste = QUESTIONS.filter(q => a[q.id]).slice(0, 3).map(q => esc(a[q.id])).join(', ');
     return '<button class="ab-strip" id="abStrip">' + A.icon('heart', 18) + '<span><b>' + esc(who) + ' likes</b> ' + taste + '</span><i>See all</i></button>';
   }
-  function open(who) { if (who === A.me() && count(who) < QUESTIONS.length) quiz(Math.max(0, QUESTIONS.findIndex(q => !of(who)[q.id]))); else card(who); }
+  function open(who) { if ((who === A.me() || helps(who)) && count(who) < QUESTIONS.length) quiz(Math.max(0, QUESTIONS.findIndex(q => !of(who)[q.id])), who); else card(who); }
   function wire(root, who) { const b = $('#abStrip', root); if (b) b.onclick = () => open(who); }
 
   /* everything one person answered, as gift tags */
   function card(who) {
-    const a = of(who), mine = who === A.me();
+    const a = of(who), mine = who === A.me(), can = mine || helps(who);
     const body = SECTIONS.map(sec => {
       const rows = QUESTIONS.filter(q => q.sec === sec && a[q.id]);
       return rows.length ? '<div class="ab-sec"><h3>' + sec + '</h3><div class="ab-tags">' + rows.map(q => '<div class="ab-tag"><small>' + q.q + '</small><span>' + esc(a[q.id]) + '</span></div>').join('') + '</div></div>' : '';
     }).join('');
     A.ui.sheet({
       title: mine ? 'About me' : 'About ' + who, wide: true,
-      html: (body || '<p class="ab-none">' + (mine ? 'You have not answered anything yet.' : esc(who) + ' has not taken the quiz yet.') + '</p>') +
-        (mine ? '<div class="lk-stack" style="margin-top:16px"><button class="btn primary block" id="abEdit">' + (count(who) < QUESTIONS.length ? 'Answer more questions' : 'Change my answers') + '</button></div><p class="sf-foot" data-keep>Everyone in the group can read your answers.</p>' : ''),
+      html: (body || '<p class="ab-none">' + (mine ? 'You have not answered anything yet.' : esc(who) + (can ? ' has not answered anything yet.' : ' has not taken the quiz yet.')) + '</p>') +
+        (can ? '<div class="lk-stack" style="margin-top:16px"><button class="btn primary block" id="abEdit">' + (count(who) < QUESTIONS.length ? (mine ? 'Answer more questions' : 'Answer more for ' + esc(who)) : (mine ? 'Change my answers' : 'Change answers')) + '</button></div><p class="sf-foot" data-keep>Everyone in the group can read ' + (mine ? 'your' : esc(A.poss(who))) + ' answers.</p>' : ''),
       onMount(el, close) {
         const e = $('#abEdit', el);
-        if (e) e.onclick = () => { close(); const first = QUESTIONS.findIndex(q => !of(who)[q.id]); quiz(first < 0 ? 0 : first); };
+        if (e) e.onclick = () => { close(); const first = QUESTIONS.findIndex(q => !of(who)[q.id]); quiz(first < 0 ? 0 : first, who); };
       }
     });
   }
 
   /* the quiz: one question at a time, each answer saved as you go */
-  function quiz(start) {
+  function quiz(start, who) {
     const me = A.me(); if (!me) return;
+    who = who || me;
     let i = Math.max(0, Math.min(QUESTIONS.length, start || 0));
     A.ui.sheet({
-      title: 'Favorites quiz',
+      title: 'Favorites quiz' + (who !== me ? ' for ' + who : ''),
       html: '<div id="abBody"></div>',
       onMount(el, close) {
         const body = $('#abBody', el);
-        const keep = () => { const inp = $('#abIn', body); if (inp && QUESTIONS[i]) save(me, QUESTIONS[i].id, inp.value); };
+        const keep = () => { const inp = $('#abIn', body); if (inp && QUESTIONS[i]) save(who, QUESTIONS[i].id, inp.value); };
         const draw = () => {
           if (i >= QUESTIONS.length) {
-            body.innerHTML = '<div class="ab-bar"><i style="width:100%"></i></div><div class="ab-done">' + A.icon('gift', 44) + '<b>All done</b><p class="muted">Everyone in the group can see what you like now. You can change an answer any time.</p></div>' +
-              '<div class="lk-stack"><button class="btn primary block" id="abSee">See my answers</button></div>';
-            $('#abSee', body).onclick = () => { close(); A.refresh(); card(me); };
+            body.innerHTML = '<div class="ab-bar"><i style="width:100%"></i></div><div class="ab-done">' + A.icon('gift', 44) + '<b>All done</b><p class="muted">Everyone in the group can see what ' + (who === me ? 'you like' : esc(who) + ' likes') + ' now. You can change an answer any time.</p></div>' +
+              '<div class="lk-stack"><button class="btn primary block" id="abSee">' + (who === me ? 'See my answers' : 'See the answers') + '</button></div>';
+            $('#abSee', body).onclick = () => { close(); A.refresh(); card(who); };
             return;
           }
-          const q = QUESTIONS[i], cur = of(me)[q.id] || '';
+          const q = QUESTIONS[i], cur = of(who)[q.id] || '';
           body.innerHTML = '<div class="ab-bar"><i style="width:' + Math.round(i / QUESTIONS.length * 100) + '%"></i></div>' +
-            '<p class="ab-step">' + q.sec + ', question ' + (i + 1) + ' of ' + QUESTIONS.length + '</p><p class="ab-q">' + q.q + '</p>' +
+            '<p class="ab-step">' + q.sec + ', question ' + (i + 1) + ' of ' + QUESTIONS.length + '</p><p class="ab-q">' + esc(qText(q, who)) + '</p>' +
             (q.pick.length ? '<div class="ab-picks">' + q.pick.map(p => '<button type="button" class="ab-pick' + (p === cur ? ' on' : '') + '" data-pick="' + esc(p) + '">' + esc(p) + '</button>').join('') + '</div>' : '') +
             '<label class="field" style="margin-top:10px"><span>' + (q.pick.length ? 'Or type your own' : (q.hint ? esc(q.hint) : 'Type your answer')) + '</span><input class="input" id="abIn" maxlength="80" autocomplete="off" value="' + esc(cur) + '"></label>' +
             '<div class="ab-nav">' + (i ? '<button class="btn" id="abBack">Back</button>' : '') + '<button class="btn ghost" id="abSkip">Skip</button><button class="btn primary" id="abNext">' + (i === QUESTIONS.length - 1 ? 'Finish' : 'Next') + '</button></div>';
